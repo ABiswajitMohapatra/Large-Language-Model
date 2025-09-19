@@ -1,42 +1,52 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
-import time
 
-st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
+# --- Page config ---
+st.set_page_config(
+    page_title="MohapAI",
+    page_icon="🧑‍💻",
+    layout="wide"
+)
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
+
 if 'sessions' not in st.session_state:
     st.session_state.sessions = []
+
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
-# --- Sidebar ---
+# --- Sidebar: Chat History ---
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
-    st.session_state.current_session = []
-if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
 
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo ---
+# --- Main Chat Area: Logo ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto;'>
+             style='width: 100%; max-width: 250px; height: auto;'>
     </div>
-    """, unsafe_allow_html=True
+    """,
+    unsafe_allow_html=True
 )
 
 # --- Message handler ---
-def add_message(role, message):
-    st.session_state.current_session.append({"role": role, "message": message})
+def add_message(role, message, color):
+    st.session_state.current_session.append({
+        "role": role,
+        "message": message,
+        "color": color
+    })
 
+# --- Custom responses dictionary ---
 CUSTOM_RESPONSES = {
     "who created you": "I was created by **Biswajit Mohapatra**, my owner 🚀",
     "creator": "My creator is **Biswajit Mohapatra**.",
@@ -62,50 +72,32 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Input handling ---
+prompt = st.chat_input("Say something to Agent...")
 if prompt:
-    add_message("User", prompt)
+    add_message("User", prompt, "#118ab2")
     normalized_prompt = prompt.strip().lower()
-
-    # Typing indicator
-    placeholder = st.empty()
-    placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
-        add_message("Agent", custom_answer)
+        add_message("Agent", custom_answer, "#ef476f")
+    elif normalized_prompt in ["exit", "quit"]:
+        add_message("Agent", "Goodbye!", "#FFD166")
+    elif normalized_prompt in ["hi", "hello", "hey", "greetings"]:
+        add_message("Agent", "Hello! How can I assist you today?", "#06d6a0")
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", answer)
+        add_message("Agent", answer, "#06d6a0")
 
-    placeholder.empty()  # Remove typing indicator
-
-# --- Display messages with left-right alignment ---
+# --- Display current chat ---
 for msg in st.session_state.current_session:
-    if msg['role'] == "Agent":
-        st.markdown(
-            f"<div style='color:black; text-align:left; margin:5px 0;'>"
-            f"<b>Agent:</b> {msg['message']}</div>",
-            unsafe_allow_html=True
-        )
-    else:  # User
-        st.markdown(
-            f"<div style='color:black; text-align:right; margin:5px 0;'>"
-            f"<b>User:</b> {msg['message']}</div>",
-            unsafe_allow_html=True
-        )
+    st.markdown(
+        f"<div style='background-color: {msg['color']}; padding:10px; border-radius:10px; margin-bottom:5px;'>"
+        f"<b>{msg['role']}:</b> {msg['message']}</div>",
+        unsafe_allow_html=True
+    )
 
-# --- Auto-scroll ---
-st.markdown("""
-<script>
-var chatContainer = window.parent.document.querySelector('main');
-chatContainer.scrollTo(0, chatContainer.scrollHeight);
-</script>
-""", unsafe_allow_html=True)
-
-# --- Save session ---
+# --- Save current session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
