@@ -32,18 +32,17 @@ st.markdown(
     """
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 250px; height: auto;'>
+             style='width: 100%; max-width: 350px; height: auto;'>
     </div>
     """,
     unsafe_allow_html=True
 )
 
 # --- Message handler ---
-def add_message(role, message, color):
+def add_message(role, message):
     st.session_state.current_session.append({
         "role": role,
-        "message": message,
-        "color": color
+        "message": message
     })
 
 # --- Custom responses dictionary ---
@@ -75,24 +74,24 @@ def check_custom_response(user_input: str):
 # --- Input handling ---
 prompt = st.chat_input("Say something to Agent...")
 if prompt:
-    add_message("User", prompt, "#118ab2")
+    add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
-        add_message("Agent", custom_answer, "#ef476f")
+        add_message("Agent", custom_answer)
     elif normalized_prompt in ["exit", "quit"]:
-        add_message("Agent", "Goodbye!", "#FFD166")
+        add_message("Agent", "Goodbye!")
     elif normalized_prompt in ["hi", "hello", "hey", "greetings"]:
-        add_message("Agent", "Hello! How can I assist you today?", "#06d6a0")
+        add_message("Agent", "Hello! How can I assist you today?")
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", answer, "#06d6a0")
+        add_message("Agent", answer)
 
 # --- Display current chat ---
 for msg in st.session_state.current_session:
     st.markdown(
-        f"<div style='background-color: {msg['color']}; padding:10px; border-radius:10px; margin-bottom:5px;'>"
+        f"<div style='padding:5px; margin-bottom:5px;'>"
         f"<b>{msg['role']}:</b> {msg['message']}</div>",
         unsafe_allow_html=True
     )
