@@ -28,13 +28,21 @@ def add_message(role, message, color):
 
 # --- Custom responses dictionary ---
 CUSTOM_RESPONSES = {
-    "creator": "I was created and trained by **Biswajit Mohapatra**, my owner 🚀",
-    "developed": "I was developed by **Biswajit Mohapatra**, who trained me.",
-    "owner": "My owner is **Biswajit Mohapatra**.",
+    "who created you": "I was created by **Biswajit Mohapatra**, my owner 🚀",
+    "creator": "My creator is **Biswajit Mohapatra**.",
+    "who is your father": "My father is **Biswajit Mohapatra** 👨‍💻",
+    "father": "My father is **Biswajit Mohapatra**.",
+    "who trained you": "I was trained by **Biswajit Mohapatra**.",
     "trained": "I was trained and fine-tuned by **Biswajit Mohapatra**.",
+    "who built you": "I was built by **Biswajit Mohapatra**.",
+    "built": "I was built by **Biswajit Mohapatra**.",
+    "who developed you": "I was developed by **Biswajit Mohapatra**.",
+    "developed": "I was developed by **Biswajit Mohapatra**.",
+    "who established you": "I was established by **Biswajit Mohapatra**.",
+    "established": "I was established by **Biswajit Mohapatra**.",
     "made you": "I was made by **Biswajit Mohapatra**.",
-    "built you": "I was built by **Biswajit Mohapatra**.",
-    "cfeted yo": "You mean 'who created you'? That’s **Biswajit Mohapatra** ✨"
+    "owner": "My owner is **Biswajit Mohapatra**.",
+    "contribution": "The contribution of **Biswajit Mohapatra** is creating, developing, training, and establishing me 🚀"
 }
 
 def check_custom_response(user_input: str):
