@@ -1,6 +1,7 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
+import groq  # Make sure this is imported for catching RateLimitError
 
 st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
 
@@ -85,8 +86,18 @@ if prompt:
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", answer)
+        # --- Groq API call with rate-limit handling ---
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+                add_message("Agent", answer)
+                break
+            except groq.RateLimitError:
+                if attempt < max_retries - 1:
+                    time.sleep(2)  # wait 2 seconds before retry
+                else:
+                    add_message("Agent", "⚠️ API rate limit exceeded. Please try again later.")
 
     placeholder.empty()  # Remove typing indicator
 
