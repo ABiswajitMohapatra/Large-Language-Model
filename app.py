@@ -1,13 +1,32 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 
+# --- Page config ---
 st.set_page_config(
     page_title="MohapAI",
     page_icon="🧑‍💻",
     layout="wide"
 )
 
-# Initialize index and sessions
+# --- Force light theme ---
+st.markdown(
+    """
+    <style>
+    /* Force light background and dark text */
+    .main {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    .stButton>button {
+        background-color: #06d6a0;
+        color: #ffffff;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
 
@@ -26,20 +45,18 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Main Chat Area ---
+# --- Main Chat Area: Logo ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg' width='250'>
+        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+             style='width: 100%; max-width: 250px; height: auto;'>
     </div>
     """,
     unsafe_allow_html=True
 )
 
-
-
-
-
+# --- Message handler ---
 def add_message(role, message, color):
     st.session_state.current_session.append({
         "role": role,
@@ -90,7 +107,7 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer, "#06d6a0")
 
-# Display current chat
+# --- Display current chat ---
 for msg in st.session_state.current_session:
     st.markdown(
         f"<div style='background-color: {msg['color']}; padding:10px; border-radius:10px; margin-bottom:5px;'>"
@@ -98,12 +115,7 @@ for msg in st.session_state.current_session:
         unsafe_allow_html=True
     )
 
-# Save current session
+# --- Save current session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
-
-
-
-
