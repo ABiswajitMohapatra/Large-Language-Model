@@ -72,34 +72,35 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Input handling ---
-prompt = st.chat_input("Say something to Agent...")
+prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
+    # Check for custom responses
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     elif normalized_prompt in ["exit", "quit"]:
         add_message("Agent", "Goodbye!")
     elif normalized_prompt in ["hi", "hello", "hey", "greetings"]:
-        add_message("Agent", "Hello! How can I assist you today?")
+        add_message("Agent", "Hello!")
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-# --- Display current chat with left-right alignment ---
+# --- Display current chat with left-right alignment, no labels ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
             f"<div style='background-color: #ffffff; padding:10px; border-radius:10px; margin-bottom:5px; width: 60%; text-align:left; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>"
-            f"<b>{msg['role']}:</b> {msg['message']}</div>",
+            f"{msg['message']}</div>",
             unsafe_allow_html=True
         )
     else:  # User
         st.markdown(
-            f"<div style='background-color: #ffffff; padding:10px; border-radius:10px; margin-bottom:5px; width: 60%; text-align:right; margin-left: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>"
-            f"<b>{msg['role']}:</b> {msg['message']}</div>",
+            f"<div style='background-color: #ffffff; padding:10px; border-radius:10px; margin-bottom:5px; width: 60%; text-align:right; margin-left:auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>"
+            f"{msg['message']}</div>",
             unsafe_allow_html=True
         )
 
