@@ -26,9 +26,10 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
+# --- Main Chat Area ---
 st.markdown(
     """
-    <div style='text-align: center; background-color: #0b3d91; padding: 20px; border-radius: 15px; margin-bottom: 20px;'>
+    <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.png.png' width='180'>
     </div>
     """,
