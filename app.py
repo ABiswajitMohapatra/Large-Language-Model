@@ -2,7 +2,7 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 
 st.set_page_config(
-    page_title="MohapAI - Agentic AI Chat",
+    page_title="MohapAI",
     page_icon="🧑‍💻",
     layout="wide"
 )
@@ -28,9 +28,9 @@ for i, sess in enumerate(st.session_state.sessions):
 
 # --- Main Chat Area ---
 st.markdown(
-    """
+    f"""
     <div style='text-align: center;'>
-        <img src='C:\Users\biswa\Downloads\ChatGPT Image Sep 19, 2025, 06_37_57 PM.png' width='120'>
+        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.png.png' width='120'>
         <h1 style='color: #4F8BF9;'>MohapAI</h1>
     </div>
     """,
@@ -76,7 +76,6 @@ if prompt:
     add_message("User", prompt, "#118ab2")
     normalized_prompt = prompt.strip().lower()
 
-    # First check custom responses
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer, "#ef476f")
@@ -100,4 +99,3 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
