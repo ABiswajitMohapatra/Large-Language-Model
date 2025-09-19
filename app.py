@@ -1,7 +1,6 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
-import groq  # Make sure this is imported for catching RateLimitError
 
 st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
 
@@ -24,20 +23,13 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo with animation and intro text ---
+# --- Logo ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
+             style='width: 100%; max-width: 350px; height: auto;'>
     </div>
-    <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    </style>
     """, unsafe_allow_html=True
 )
 
@@ -81,34 +73,21 @@ if prompt:
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
     time.sleep(0.5)  # simulate typing
 
-    # Check for custom responses first
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        # --- Groq API call with rate-limit handling ---
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-                add_message("Agent", answer)
-                break
-            except groq.RateLimitError:
-                if attempt < max_retries - 1:
-                    time.sleep(2)  # wait 2 seconds before retry
-                else:
-                    add_message("Agent", "⚠️ API rate limit exceeded. Please try again later.")
+        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+        add_message("Agent", answer)
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Scrollable chat area ---
-st.markdown("<div id='chatbox' style='height:500px; overflow-y:auto; padding:5px;'>", unsafe_allow_html=True)
-
+# --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
             f"<div style='color:black; text-align:left; margin:5px 0;'>"
-            f"<b>Agent:</b> <i>{msg['message']}</i></div>",
+            f"<b>Agent:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
     else:  # User
@@ -118,13 +97,11 @@ for msg in st.session_state.current_session:
             unsafe_allow_html=True
         )
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# Auto-scroll inside chatbox
+# --- Auto-scroll ---
 st.markdown("""
 <script>
-var chatContainer = window.parent.document.querySelector('#chatbox');
-if (chatContainer) { chatContainer.scrollTo(0, chatContainer.scrollHeight); }
+var chatContainer = window.parent.document.querySelector('main');
+chatContainer.scrollTo(0, chatContainer.scrollHeight);
 </script>
 """, unsafe_allow_html=True)
 
