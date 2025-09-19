@@ -88,13 +88,20 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-# --- Display current chat ---
+# --- Display current chat with left-right alignment ---
 for msg in st.session_state.current_session:
-    st.markdown(
-        f"<div style='padding:5px; margin-bottom:5px;'>"
-        f"<b>{msg['role']}:</b> {msg['message']}</div>",
-        unsafe_allow_html=True
-    )
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='background-color: #ffffff; padding:10px; border-radius:10px; margin-bottom:5px; width: 60%; text-align:left; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>"
+            f"<b>{msg['role']}:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='background-color: #ffffff; padding:10px; border-radius:10px; margin-bottom:5px; width: 60%; text-align:right; margin-left: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>"
+            f"<b>{msg['role']}:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
 
 # --- Save current session ---
 if st.sidebar.button("Save Session"):
