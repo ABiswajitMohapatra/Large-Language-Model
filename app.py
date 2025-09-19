@@ -27,6 +27,7 @@ for i, sess in enumerate(st.session_state.sessions):
         st.session_state.current_session = sess.copy()
 
 # --- Main Chat Area ---
+# --- Main Chat Area ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 20px;'>
@@ -35,6 +36,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
@@ -100,5 +102,6 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
