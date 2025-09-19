@@ -3,27 +3,9 @@ from model import load_documents, create_or_load_index, chat_with_agent
 
 # --- Page config ---
 st.set_page_config(
-    page_title="MohapAI",
+    page_title="BiswaLex",
     page_icon="🧑‍💻",
     layout="wide"
-)
-
-# --- Force light theme ---
-st.markdown(
-    """
-    <style>
-    /* Force light background and dark text */
-    .main {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    .stButton>button {
-        background-color: #06d6a0;
-        color: #ffffff;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
 )
 
 # --- Initialize index and sessions ---
