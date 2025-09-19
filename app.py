@@ -1,7 +1,7 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
+import time
 
-# --- Page config ---
 st.set_page_config(
     page_title="BiswaLex",
     page_icon="🧑‍💻",
@@ -18,9 +18,15 @@ if 'sessions' not in st.session_state:
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
+if 'typing' not in st.session_state:
+    st.session_state.typing = False
+
 # --- Sidebar: Chat History ---
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
+    st.session_state.current_session = []
+
+if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
 
 for i, sess in enumerate(st.session_state.sessions):
@@ -71,35 +77,59 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Input handling ---
+# --- Input handling with Enter key and auto-focus ---
+st.markdown("""
+<script>
+const inputBox = window.parent.document.querySelector('input[type=text]');
+if (inputBox) {
+    inputBox.focus();
+    inputBox.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            const sendButton = window.parent.document.querySelector('button[kind=primary]');
+            if (sendButton) sendButton.click();
+        }
+    });
+}
+</script>
+""", unsafe_allow_html=True)
+
 prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
+
+    # Typing indicator
+    st.session_state.typing = True
+    st.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
+    st.experimental_rerun()  # Force UI update to show typing
+
+    time.sleep(0.5)  # simulate typing delay
 
     # Check for custom responses first
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        # All other queries go to the AI model
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-# --- Display current chat with left-right alignment, no labels ---
+    st.session_state.typing = False
+
+# --- Display messages with black text and auto-scroll ---
 for msg in st.session_state.current_session:
-    if msg['role'] == "Agent":
-        st.markdown(
-            f"<div style='background-color: #ffffff; padding:10px; border-radius:10px; margin-bottom:5px; width: 60%; text-align:left; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>"
-            f"{msg['message']}</div>",
-            unsafe_allow_html=True
-        )
-    else:  # User
-        st.markdown(
-            f"<div style='background-color: #ffffff; padding:10px; border-radius:10px; margin-bottom:5px; width: 60%; text-align:right; margin-left:auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>"
-            f"{msg['message']}</div>",
-            unsafe_allow_html=True
-        )
+    st.markdown(
+        f"<p style='color:black; font-size:16px; margin:5px 0;'><b>{msg['role']}:</b> {msg['message']}</p>",
+        unsafe_allow_html=True
+    )
+
+# Auto-scroll to bottom
+st.markdown("""
+<script>
+var chatContainer = window.parent.document.querySelector('main');
+chatContainer.scrollTo(0, chatContainer.scrollHeight);
+</script>
+""", unsafe_allow_html=True)
 
 # --- Save current session ---
 if st.sidebar.button("Save Session"):
