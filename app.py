@@ -64,7 +64,6 @@ def check_custom_response(user_input: str):
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...")
-
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
@@ -83,12 +82,20 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages ---
+# --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
-    st.markdown(
-        f"<p style='color:black; font-size:16px; margin:5px 0;'><b>{msg['role']}:</b> {msg['message']}</p>",
-        unsafe_allow_html=True
-    )
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='color:black; text-align:left; margin:5px 0;'>"
+            f"<b>Agent:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='color:black; text-align:right; margin:5px 0;'>"
+            f"<b>User:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
 
 # --- Auto-scroll ---
 st.markdown("""
