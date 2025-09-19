@@ -26,13 +26,36 @@ st.markdown("<h1 style='text-align: center; color: #4F8BF9;'>Agentic AI Chat</h1
 def add_message(role, message, color):
     st.session_state.current_session.append({"role": role, "message": message, "color": color})
 
+# --- Custom responses dictionary ---
+CUSTOM_RESPONSES = {
+    "creator": "I was created and trained by **Biswajit Mohapatra**, my owner 🚀",
+    "developed": "I was developed by **Biswajit Mohapatra**, who trained me.",
+    "owner": "My owner is **Biswajit Mohapatra**.",
+    "trained": "I was trained and fine-tuned by **Biswajit Mohapatra**.",
+    "made you": "I was made by **Biswajit Mohapatra**.",
+    "built you": "I was built by **Biswajit Mohapatra**.",
+    "cfeted yo": "You mean 'who created you'? That’s **Biswajit Mohapatra** ✨"
+}
+
+def check_custom_response(user_input: str):
+    normalized = user_input.lower()
+    for keyword, response in CUSTOM_RESPONSES.items():
+        if keyword in normalized:
+            return response
+    return None
+
+# --- Input handling ---
 prompt = st.chat_input("Say something to Agent...")
 
 if prompt:
     add_message("User", prompt, "#118ab2")
     normalized_prompt = prompt.strip().lower()
 
-    if normalized_prompt in ["exit", "quit"]:
+    # First check custom responses
+    custom_answer = check_custom_response(normalized_prompt)
+    if custom_answer:
+        add_message("Agent", custom_answer, "#ef476f")
+    elif normalized_prompt in ["exit", "quit"]:
         add_message("Agent", "Goodbye!", "#FFD166")
     elif normalized_prompt in ["hi", "hello", "hey", "greetings"]:
         add_message("Agent", "Hello! How can I assist you today?", "#06d6a0")
@@ -47,7 +70,7 @@ for msg in st.session_state.current_session:
         f"<b>{msg['role']}:</b> {msg['message']}</div>", unsafe_allow_html=True
     )
 
-# Save current session when user closes or switches chat
+# Save current session
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
