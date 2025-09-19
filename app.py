@@ -77,15 +77,12 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # Check for custom responses
+    # Check for custom responses first
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
-    elif normalized_prompt in ["exit", "quit"]:
-        add_message("Agent", "Goodbye!")
-    elif normalized_prompt in ["hi", "hello", "hey", "greetings"]:
-        add_message("Agent", "Hello!")
     else:
+        # All other queries go to the AI model
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
