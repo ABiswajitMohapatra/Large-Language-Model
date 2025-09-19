@@ -30,8 +30,8 @@ for i, sess in enumerate(st.session_state.sessions):
 st.markdown(
     """
     <div style='text-align: center;'>
-        <img src='https://i.ibb.co/4f8BF9/logo.png' width='120'>
-        <h1 style='color: #4F8BF9;'>MohapAI Chat</h1>
+        <img src='C:\Users\biswa\Downloads\ChatGPT Image Sep 19, 2025, 06_37_57 PM.png' width='120'>
+        <h1 style='color: #4F8BF9;'>MohapAI</h1>
     </div>
     """,
     unsafe_allow_html=True
@@ -100,3 +100,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
