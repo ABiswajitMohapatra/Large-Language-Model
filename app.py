@@ -1,12 +1,19 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 
-st.set_page_config(page_title="Agentic AI Chat", page_icon="🧑‍💻", layout="wide")
+st.set_page_config(
+    page_title="MohapAI - Agentic AI Chat",
+    page_icon="🧑‍💻",
+    layout="wide"
+)
 
+# Initialize index and sessions
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
+
 if 'sessions' not in st.session_state:
-    st.session_state.sessions = []  # list of sessions
+    st.session_state.sessions = []
+
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
@@ -15,16 +22,27 @@ st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 
-# List previous sessions
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
 # --- Main Chat Area ---
-st.markdown("<h1 style='text-align: center; color: #4F8BF9;'>Agentic AI Chat</h1>", unsafe_allow_html=True)
+st.markdown(
+    """
+    <div style='text-align: center;'>
+        <img src='https://i.ibb.co/4f8BF9/logo.png' width='120'>
+        <h1 style='color: #4F8BF9;'>MohapAI Chat</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 def add_message(role, message, color):
-    st.session_state.current_session.append({"role": role, "message": message, "color": color})
+    st.session_state.current_session.append({
+        "role": role,
+        "message": message,
+        "color": color
+    })
 
 # --- Custom responses dictionary ---
 CUSTOM_RESPONSES = {
@@ -54,7 +72,6 @@ def check_custom_response(user_input: str):
 
 # --- Input handling ---
 prompt = st.chat_input("Say something to Agent...")
-
 if prompt:
     add_message("User", prompt, "#118ab2")
     normalized_prompt = prompt.strip().lower()
@@ -75,7 +92,8 @@ if prompt:
 for msg in st.session_state.current_session:
     st.markdown(
         f"<div style='background-color: {msg['color']}; padding:10px; border-radius:10px; margin-bottom:5px;'>"
-        f"<b>{msg['role']}:</b> {msg['message']}</div>", unsafe_allow_html=True
+        f"<b>{msg['role']}:</b> {msg['message']}</div>",
+        unsafe_allow_html=True
     )
 
 # Save current session
