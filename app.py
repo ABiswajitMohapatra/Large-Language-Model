@@ -18,16 +18,16 @@ if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
-
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
+# --- Logo with animation and intro text at top ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 5px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+             style='max-width: 350px; height: auto; animation: bounce 1s infinite;'>
         <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
     </div>
     <style>
@@ -73,12 +73,10 @@ prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
-
     # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
     time.sleep(0.5)  # simulate typing
-
     # Check for custom responses first
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -86,12 +84,10 @@ if prompt:
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
-
     placeholder.empty()  # Remove typing indicator
 
-# --- Scrollable chat area ---
+# --- Scrollable chat area (below logo & intro, only for messages) ---
 st.markdown("<div id='chatbox' style='height:500px; overflow-y:auto; padding:5px;'>", unsafe_allow_html=True)
-
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
@@ -105,10 +101,9 @@ for msg in st.session_state.current_session:
             f"<b>User:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
-
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Auto-scroll inside chatbox
+# Scrolls only message area, logo stays visible at top
 st.markdown("""
 <script>
 var chatContainer = window.parent.document.querySelector('#chatbox');
