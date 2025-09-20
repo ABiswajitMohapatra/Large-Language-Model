@@ -69,47 +69,143 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Chat input with upload icon on the left ---
-cols = st.columns([1, 10])  # 1 unit for upload icon, 10 units for chat input
+# --- Custom chat input bar with embedded upload icon ---
+st.markdown(
+    """
+    <style>
+    .custom-bar {
+        display: flex;
+        align-items: center;
+        border: 1.5px solid #50dbc0;
+        border-radius: 30px;
+        padding: 8px 12px;
+        background: #F3F7FA;
+        margin-bottom: 10px;
+        max-width: 700px;
+    }
+    .custom-bar input[type="text"] {
+        border: none;
+        outline: none;
+        flex-grow: 1;
+        font-size: 18px;
+        background: transparent;
+        padding-left: 10px;
+    }
+    .upload-btn {
+        background: #50dbc0;
+        color: white;
+        border-radius: 50%;
+        border: none;
+        width: 36px;
+        height: 36px;
+        font-size: 24px;
+        cursor: pointer;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .send-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 24px;
+        color: #50dbc0;
+        padding: 0;
+    }
+    </style>
+    <div class="custom-bar">
+        <label for="file-uploader" class="upload-btn" title="Upload File">+</label>
+        <input type="file" id="file-uploader" style="display:none;" />
+        <input type="text" id="custom-chat-input" placeholder="Say something..." />
+        <button class="send-btn" title="Send">&#8594;</button>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-with cols[0]:
-    uploaded_file = st.file_uploader("", type=["txt", "pdf", "docx", "jpg", "png"], label_visibility="collapsed")
-    # Styling the upload icon as a "+" sign in a rounded box
-    st.markdown(
-        """
-        <div style='display:flex; align-items:center; justify-content:center; height:40px;'>
-            <span style='font-size:24px; color:#888; background:#f3f3f3; border-radius:50%; 
-                         display:inline-block; width:36px; height:36px; line-height:36px; text-align:center;'>
-                +
-            </span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+# JavaScript interaction bridge for file input and send button
+js_code = """
+<script>
+    const inputBox = document.getElementById('custom-chat-input');
+    const sendBtn = document.querySelector('.send-btn');
+    const fileUploader = document.getElementById('file-uploader');
+    const uploadBtn = document.querySelector('label[for="file-uploader"]');
 
-with cols[1]:
-    prompt = st.chat_input("Say something...")
+    sendBtn.onclick = () => {
+        const text = inputBox.value.trim();
+        if (text !== "") {
+            const evt = new CustomEvent("streamlit:custom_input", { detail: text });
+            window.dispatchEvent(evt);
+            inputBox.value = "";
+        }
+    };
 
-# --- Process the prompt if submitted ---
-if prompt:
-    add_message("User", prompt)
-    normalized_prompt = prompt.strip().lower()
+    inputBox.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendBtn.click();
+        }
+    });
+
+    fileUploader.onchange = () => {
+        if (fileUploader.files.length > 0) {
+            const fileName = fileUploader.files[0].name;
+            const evt = new CustomEvent("streamlit:file_upload", { detail: fileName });
+            window.dispatchEvent(evt);
+            // Optional: handle the file further using Streamlit's file uploader widget if desired
+        }
+    };
+</script>
+"""
+st.components.v1.html(js_code, height=0, width=0)
+
+# Helper flags and input tracking
+if 'custom_input_value' not in st.session_state:
+    st.session_state.custom_input_value = ""
+
+uploaded_file_name = None
+
+# Streamlit event listener emulation
+def handle_custom_input():
+    input_val = st.experimental_get_query_params().get("custom_input", [""])[0]
+    if input_val:
+        st.session_state.custom_input_value = input_val
+
+def handle_file_upload():
+    uploaded_filename = st.experimental_get_query_params().get("uploaded_file", [""])[0]
+    if uploaded_filename:
+        st.session_state.uploaded_file_name = uploaded_filename
+
+# Capturing events via query params (alternative, limited)
+# Real integration requires Streamlit advanced features or workarounds; as workaround, let's do:
+
+# Fallback: Use regular Streamlit input and file uploader for interaction binding
+prompt = st.text_input("Say something...", key="custom_input_value")
+
+uploaded_file = st.file_uploader("Upload your file", type=["txt", "pdf", "docx", "jpg", "png"])
+
+if prompt and prompt.strip() != "":
+    user_input = prompt.strip()
+    add_message("User", user_input)
+    normalized_prompt = user_input.lower()
+
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
+    time.sleep(0.5)
+
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+        answer = chat_with_agent(user_input, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
+    st.session_state.custom_input_value = ""  # clear input box
 
-# --- Optional: Process uploaded file ---
 if uploaded_file is not None:
-    file_bytes = uploaded_file.read()
     st.success(f"Uploaded file: {uploaded_file.name}")
-    # You can add logic here to do something with the uploaded file if desired
+    # You can add processing logic here for the uploaded file if needed
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
@@ -117,13 +213,13 @@ for msg in st.session_state.current_session:
         st.markdown(
             f"<div style='color:black; text-align:left; margin:5px 0;'>"
             f"<b>Agent:</b> {msg['message']}</div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
-    else:  # User messages
+    else:
         st.markdown(
             f"<div style='color:black; text-align:right; margin:5px 0;'>"
             f"<b>User:</b> {msg['message']}</div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
 # --- Save session ---
