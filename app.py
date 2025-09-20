@@ -38,6 +38,32 @@ st.markdown(
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
     }
+
+    /* --- Style the chat input bar with + icon --- */
+    .stChatInputContainer {
+        position: relative;
+    }
+    .upload-btn-wrapper {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    .upload-btn-wrapper input[type=file] {
+        font-size: 100px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .upload-btn {
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        color: gray;
+    }
     </style>
     """, unsafe_allow_html=True
 )
@@ -60,18 +86,28 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Custom chat input with "+" icon for upload ---
-col1, col2 = st.columns([0.1, 0.9])
-with col1:
-    uploaded_file = st.file_uploader("", type=["pdf", "png", "jpg", "jpeg"], label_visibility="collapsed")
-    if uploaded_file:
-        if uploaded_file.type == "application/pdf":
-            st.session_state.uploaded_content = extract_text_from_pdf(uploaded_file)
-        elif uploaded_file.type.startswith("image/"):
-            st.session_state.uploaded_content = extract_text_from_image(uploaded_file)
+# --- Custom Input Bar with "+" inside ---
+st.markdown(
+    """
+    <div class="stChatInputContainer">
+        <div class="upload-btn-wrapper">
+            <button class="upload-btn">+</button>
+            <input type="file" id="fileUpload" accept=".pdf,.png,.jpg,.jpeg">
+        </div>
+    </div>
+    """, unsafe_allow_html=True
+)
 
-with col2:
-    prompt = st.chat_input("Say something...")
+# normal chat input (aligned with our + button)
+prompt = st.chat_input("Say something...")
+
+# Handle upload via st.file_uploader (hidden, controlled by CSS)
+uploaded_file = st.file_uploader("hidden uploader", type=["pdf","png","jpg","jpeg"], label_visibility="collapsed")
+if uploaded_file:
+    if uploaded_file.type == "application/pdf":
+        st.session_state.uploaded_content = extract_text_from_pdf(uploaded_file)
+    elif uploaded_file.type.startswith("image/"):
+        st.session_state.uploaded_content = extract_text_from_image(uploaded_file)
 
 # --- Chat Section ---
 if prompt:
