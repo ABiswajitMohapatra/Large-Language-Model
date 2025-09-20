@@ -40,7 +40,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- Message handler ---
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
@@ -69,160 +68,141 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Custom chat input bar with embedded upload icon ---
+# --- Custom search/chat input with upload + send buttons ---
 st.markdown(
     """
     <style>
-    .custom-bar {
+    .chat-input-container {
         display: flex;
         align-items: center;
-        border: 1.5px solid #50dbc0;
-        border-radius: 30px;
-        padding: 8px 12px;
-        background: #F3F7FA;
-        margin-bottom: 10px;
         max-width: 700px;
-    }
-    .custom-bar input[type="text"] {
-        border: none;
-        outline: none;
-        flex-grow: 1;
-        font-size: 18px;
-        background: transparent;
-        padding-left: 10px;
+        margin-bottom: 20px;
     }
     .upload-btn {
         background: #50dbc0;
-        color: white;
         border-radius: 50%;
-        border: none;
         width: 36px;
         height: 36px;
+        border: none;
+        color: white;
         font-size: 24px;
         cursor: pointer;
         margin-right: 10px;
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
+    }
+    .chat-text-input {
+        flex-grow: 1;
+        border: 1.5px solid #50dbc0;
+        border-radius: 30px;
+        padding: 12px 20px;
+        font-size: 18px;
+        outline: none;
+        transition: box-shadow 0.2s;
+    }
+    .chat-text-input:focus {
+        box-shadow: 0 0 10px #50dbc0;
     }
     .send-btn {
         background: transparent;
         border: none;
         cursor: pointer;
-        font-size: 24px;
+        font-size: 28px;
         color: #50dbc0;
-        padding: 0;
+        margin-left: 10px;
+        user-select: none;
+    }
+    input[type="file"] {
+        display: none;
     }
     </style>
-    <div class="custom-bar">
+    <div class="chat-input-container">
         <label for="file-uploader" class="upload-btn" title="Upload File">+</label>
-        <input type="file" id="file-uploader" style="display:none;" />
-        <input type="text" id="custom-chat-input" placeholder="Say something..." />
-        <button class="send-btn" title="Send">&#8594;</button>
+        <input type="file" id="file-uploader" />
+        <input type="text" id="chat-input" class="chat-text-input" placeholder="Say something..." />
+        <button id="send-btn" class="send-btn" title="Send">&#10148;</button>
     </div>
+    <script>
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const fileUploader = document.getElementById('file-uploader');
+
+    sendBtn.onclick = () => {
+        const val = input.value.trim();
+        if (val) {
+            window.parent.postMessage({ type: 'sendMessage', message: val }, '*');
+            input.value = '';
+        }
+    };
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendBtn.click();
+            e.preventDefault();
+        }
+    });
+    fileUploader.onchange = () => {
+        if (fileUploader.files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                window.parent.postMessage({ type: 'fileUpload', 
+                  filename: fileUploader.files[0].name, 
+                  data: e.target.result }, '*');
+            };
+            reader.readAsDataURL(fileUploader.files[0]);
+        }
+    };
+    </script>
     """,
     unsafe_allow_html=True,
 )
 
-# JavaScript interaction bridge for file input and send button
-js_code = """
-<script>
-    const inputBox = document.getElementById('custom-chat-input');
-    const sendBtn = document.querySelector('.send-btn');
-    const fileUploader = document.getElementById('file-uploader');
-    const uploadBtn = document.querySelector('label[for="file-uploader"]');
+# Listen for messages posted from the embedded script using Streamlit's experimental_event system
+def handle_js_messages():
+    event = st.experimental_get_query_params().get("message_event")
+    # Cannot actually listen to postMessage directly in Streamlit, requires advanced workaround or component library
+    # So instead, fall back to below input methods
 
-    sendBtn.onclick = () => {
-        const text = inputBox.value.trim();
-        if (text !== "") {
-            const evt = new CustomEvent("streamlit:custom_input", { detail: text });
-            window.dispatchEvent(evt);
-            inputBox.value = "";
-        }
-    };
+handle_js_messages()
 
-    inputBox.addEventListener("keypress", function(event) {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            sendBtn.click();
-        }
-    });
+# Use text_input and file uploader widgets for interactivity while hiding them and syncing with the custom bar if needed
+prompt = st.text_input("", key="hidden_prompt", label_visibility="collapsed")
+uploaded_file = st.file_uploader("", key="hidden_file_uploader", label_visibility="collapsed")
 
-    fileUploader.onchange = () => {
-        if (fileUploader.files.length > 0) {
-            const fileName = fileUploader.files[0].name;
-            const evt = new CustomEvent("streamlit:file_upload", { detail: fileName });
-            window.dispatchEvent(evt);
-            // Optional: handle the file further using Streamlit's file uploader widget if desired
-        }
-    };
-</script>
-"""
-st.components.v1.html(js_code, height=0, width=0)
-
-# Helper flags and input tracking
-if 'custom_input_value' not in st.session_state:
-    st.session_state.custom_input_value = ""
-
-uploaded_file_name = None
-
-# Streamlit event listener emulation
-def handle_custom_input():
-    input_val = st.experimental_get_query_params().get("custom_input", [""])[0]
-    if input_val:
-        st.session_state.custom_input_value = input_val
-
-def handle_file_upload():
-    uploaded_filename = st.experimental_get_query_params().get("uploaded_file", [""])[0]
-    if uploaded_filename:
-        st.session_state.uploaded_file_name = uploaded_filename
-
-# Capturing events via query params (alternative, limited)
-# Real integration requires Streamlit advanced features or workarounds; as workaround, let's do:
-
-# Fallback: Use regular Streamlit input and file uploader for interaction binding
-prompt = st.text_input("Say something...", key="custom_input_value")
-
-uploaded_file = st.file_uploader("Upload your file", type=["txt", "pdf", "docx", "jpg", "png"])
-
+# React to user input - process prompt whenever it changes (not on every keystroke)
 if prompt and prompt.strip() != "":
     user_input = prompt.strip()
     add_message("User", user_input)
-    normalized_prompt = user_input.lower()
+    norm_prompt = user_input.lower()
 
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
     time.sleep(0.5)
 
-    custom_answer = check_custom_response(normalized_prompt)
+    custom_answer = check_custom_response(norm_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
         answer = chat_with_agent(user_input, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
     placeholder.empty()
-    st.session_state.custom_input_value = ""  # clear input box
+    st.session_state.hidden_prompt = ""
 
+# Handle file upload through hidden uploader
 if uploaded_file is not None:
     st.success(f"Uploaded file: {uploaded_file.name}")
-    # You can add processing logic here for the uploaded file if needed
+    # Process uploaded file if needed
 
-# --- Display messages with left-right alignment ---
+# Show messages with styles
 for msg in st.session_state.current_session:
-    if msg['role'] == "Agent":
-        st.markdown(
-            f"<div style='color:black; text-align:left; margin:5px 0;'>"
-            f"<b>Agent:</b> {msg['message']}</div>",
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            f"<div style='color:black; text-align:right; margin:5px 0;'>"
-            f"<b>User:</b> {msg['message']}</div>",
-            unsafe_allow_html=True,
-        )
+    style = "left" if msg['role'] == "Agent" else "right"
+    st.markdown(
+        f'<div style="color:black; text-align:{style}; margin:5px 0;">'
+        f'<b>{msg["role"]}:</b> {msg["message"]}</div>',
+        unsafe_allow_html=True
+    )
 
-# --- Save session ---
+# Sidebar save session button
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
