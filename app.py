@@ -1,6 +1,7 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
+from streamlit.components.v1 import html
 
 st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
 
@@ -41,6 +42,31 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# --- Upload "+" button ---
+html("""
+<style>
+.upload-btn {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    background-color: #fff;
+    margin-bottom: 10px;
+}
+.upload-btn:hover {
+    background-color: #f0f0f0;
+}
+</style>
+
+<label class="upload-btn" for="fileUpload">+</label>
+<input type="file" id="fileUpload" style="display:none">
+""")
+
 # --- Message handler ---
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
@@ -79,7 +105,7 @@ if prompt:
     # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
+    time.sleep(0.5)
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -88,7 +114,7 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
@@ -98,7 +124,7 @@ for msg in st.session_state.current_session:
             f"<b>Agent:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
-    else:  # User
+    else:
         st.markdown(
             f"<div style='color:black; text-align:right; margin:5px 0;'>"
             f"<b>User:</b> {msg['message']}</div>",
