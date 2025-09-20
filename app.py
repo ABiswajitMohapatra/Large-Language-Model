@@ -22,7 +22,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo with animation and intro text at top ---
+# --- Logo with animation and intro text ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 5px;'>
@@ -86,8 +86,8 @@ if prompt:
         add_message("Agent", answer)
     placeholder.empty()  # Remove typing indicator
 
-# --- Scrollable chat area (below logo & intro, only for messages) ---
-st.markdown("<div id='chatbox' style='height:500px; overflow-y:auto; padding:5px;'>", unsafe_allow_html=True)
+# --- Scrollable chat area (messages only) ---
+st.markdown("<div id='chatbox' style='height:500px; overflow-y:auto; padding:5px; border:1px solid #ddd;'>", unsafe_allow_html=True)
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
@@ -103,11 +103,34 @@ for msg in st.session_state.current_session:
         )
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Scrolls only message area, logo stays visible at top
+# --- Scroll-to-bottom arrow button ---
 st.markdown("""
+<style>
+#scroll-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #06d6a0;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+#scroll-btn:hover {
+    background-color: #05c18b;
+}
+</style>
+<button id="scroll-btn">&#8595;</button>
 <script>
-var chatContainer = window.parent.document.querySelector('#chatbox');
-if (chatContainer) { chatContainer.scrollTo(0, chatContainer.scrollHeight); }
+var chatContainer = document.querySelector('#chatbox');
+var scrollBtn = document.querySelector('#scroll-btn');
+scrollBtn.onclick = function() {
+    if (chatContainer) { chatContainer.scrollTo(0, chatContainer.scrollHeight); }
+};
 </script>
 """, unsafe_allow_html=True)
 
