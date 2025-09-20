@@ -70,16 +70,21 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Chat input with "+" upload button ---
+col1, col2 = st.columns([8,1])
+with col1:
+    prompt = st.chat_input("Say something...")
+with col2:
+    uploaded_file = st.file_uploader("", key="file", type=["pdf","png","jpg","jpeg"], label_visibility="collapsed")
+
+# --- Handle chat input ---
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
+    time.sleep(0.5)
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -88,7 +93,13 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
+
+# --- Handle uploaded file ---
+if uploaded_file:
+    add_message("User", f"[File uploaded: {uploaded_file.name}]")
+    # Here you can call any processing function if needed
+    # e.g., process_file(uploaded_file)
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
