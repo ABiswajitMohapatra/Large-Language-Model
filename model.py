@@ -4,7 +4,7 @@ from groq import Groq
 from llama_index.core.schema import TextNode
 from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.embeddings.huggingface import HuggingFaceEmbedding
 
 # Load Groq API key
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
@@ -73,3 +73,4 @@ def chat_with_agent(query, index, chat_history, memory_limit=12):
         "Answer the user's last query in context."
     )
     return query_groq_api(prompt)
+
