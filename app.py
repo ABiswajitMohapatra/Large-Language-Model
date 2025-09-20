@@ -23,34 +23,19 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo with animation and intro text (spacing fixed) ---
 st.markdown(
     """
+    <div style='text-align: center; margin-bottom: 5px;'>
+        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
+    </div>
     <style>
-    .main > div {
-        padding-top: 0rem !important;   /* reduce top padding */
-    }
-    .custom-logo {
-        text-align: center;
-        margin-bottom: 5px; /* reduce gap below logo */
-    }
-    .custom-welcome {
-        font-size:20px;
-        font-style:italic;
-        color:#333;
-        margin-top: 5px;   /* reduce gap above welcome text */
-        margin-bottom: 5px; /* reduce gap below welcome text */
-    }
     @keyframes bounce {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
     }
     </style>
-    <div class='custom-logo'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 280px; height: auto; animation: bounce 1s infinite;'/>
-    </div>
-    <p class='custom-welcome'>Welcome to BiswaLex AI Chat!</p>
     """, unsafe_allow_html=True
 )
 
