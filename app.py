@@ -1,99 +1,105 @@
 import streamlit as st
-from model import load_documents, create_or_load_index, chat_with_agent
-from io import BytesIO
-import tempfile
-import os
+import time
+from model import (
+    load_documents, create_or_load_index, chat_with_agent,
+    extract_text_from_pdf, extract_text_from_image
+)
 
 st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
 
-# --- Initialize index and sessions ---
-if "index" not in st.session_state:
+if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
-if "sessions" not in st.session_state:
+if 'sessions' not in st.session_state:
     st.session_state.sessions = []
-if "current_session" not in st.session_state:
+if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
-# --- Sidebar ---
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
-    st.session_state.sessions = []
     st.session_state.current_session = []
-if st.sidebar.button("Save Session"):
-    st.session_state.sessions.append(st.session_state.current_session)
-    st.success("Session saved!")
 
-# --- Title ---
-st.title("Welcome to BiswaLex AI Chat!")
+for i, sess in enumerate(st.session_state.sessions):
+    if st.sidebar.button(f"Session {i+1}"):
+        st.session_state.current_session = sess.copy()
 
-# --- Display previous chat history ---
-for msg in st.session_state.current_session:
-    if msg["role"] == "user":
-        st.chat_message("user").markdown(msg["content"])
-    else:
-        st.chat_message("assistant").markdown(msg["content"])
-
-# --- Custom CSS for Chat Input ---
-st.markdown("""
+st.markdown(
+    """
+    <div style='text-align: center; margin-bottom: 10px;'>
+        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
+    </div>
     <style>
-    .stFileUploader {
-        display: none;
-    }
-    .chat-bar {
-        display: flex;
-        align-items: center;
-        border: 1px solid #ccc;
-        border-radius: 20px;
-        padding: 5px 10px;
-        background-color: #fff;
-    }
-    .chat-input {
-        flex: 1;
-        border: none;
-        outline: none;
-        font-size: 16px;
-        padding: 8px;
-    }
-    .plus-btn {
-        font-size: 24px;
-        font-weight: bold;
-        margin-right: 10px;
-        cursor: pointer;
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
     }
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True
+)
 
-# --- Custom Chat Input with + Upload ---
-col1, col2 = st.columns([0.1, 0.9])
+def add_message(role, message):
+    st.session_state.current_session.append({"role": role, "message": message})
 
-with col1:
-    upload = st.file_uploader("", type=["pdf", "png", "jpg", "jpeg"], label_visibility="collapsed")
+CUSTOM_RESPONSES = {
+    "who created you": "I was created by *Biswajit Mohapatra*, my owner 🚀",
+    "creator": "My creator is *Biswajit Mohapatra*.",
+    "who is your father": "My father is *Biswajit Mohapatra* 👨‍💻",
+    "trained": "I was trained and fine-tuned by *Biswajit Mohapatra*.",
+    "owner": "My owner is *Biswajit Mohapatra*."
+}
 
-with col2:
-    user_input = st.chat_input("Say something...")
+def check_custom_response(user_input: str):
+    normalized = user_input.lower()
+    for keyword, response in CUSTOM_RESPONSES.items():
+        if keyword in normalized:
+            return response
+    return None
 
-# --- Handle Upload ---
-if upload is not None:
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        tmp_file.write(upload.read())
-        temp_path = tmp_file.name
+# --- File Upload Section ---
+uploaded_file = st.file_uploader("Upload PDF or Image", type=["pdf","png","jpg","jpeg"])
+if uploaded_file:
+    extracted_text = ""
+    if uploaded_file.type == "application/pdf":
+        extracted_text = extract_text_from_pdf(uploaded_file)
+    elif uploaded_file.type.startswith("image/"):
+        extracted_text = extract_text_from_image(uploaded_file)
 
-    # Load file and update index
-    docs = load_documents(temp_path)
-    st.session_state.index = create_or_load_index(docs)
-    os.remove(temp_path)
+    st.subheader("Extracted Text")
+    st.text_area("Content", extracted_text, height=300)
 
-    response = "✅ File uploaded and processed! You can now ask questions about it."
-    st.chat_message("assistant").markdown(response)
-    st.session_state.current_session.append({"role": "assistant", "content": response})
+    if st.button("Summarize Uploaded Content"):
+        summary = chat_with_agent(extracted_text, st.session_state.index, st.session_state.current_session)
+        add_message("Agent", summary)
 
-# --- Handle User Input ---
-if user_input:
-    st.chat_message("user").markdown(user_input)
-    st.session_state.current_session.append({"role": "user", "content": user_input})
+# --- Chat Section ---
+prompt = st.chat_input("Say something...")
+if prompt:
+    add_message("User", prompt)
+    normalized_prompt = prompt.strip().lower()
 
-    response = chat_with_agent(st.session_state.index, user_input)
-    st.chat_message("assistant").markdown(response)
-    st.session_state.current_session.append({"role": "assistant", "content": response})
+    placeholder = st.empty()
+    placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
+    time.sleep(0.5)
+
+    custom_answer = check_custom_response(normalized_prompt)
+    if custom_answer:
+        add_message("Agent", custom_answer)
+    else:
+        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+        add_message("Agent", answer)
+
+    placeholder.empty()
+
+for msg in st.session_state.current_session:
+    align = "left" if msg['role'] == "Agent" else "right"
+    st.markdown(
+        f"<div style='color:black; text-align:{align}; margin:5px 0;'><b>{msg['role']}:</b> {msg['message']}</div>",
+        unsafe_allow_html=True
+    )
+
+if st.sidebar.button("Save Session"):
+    if st.session_state.current_session not in st.session_state.sessions:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
