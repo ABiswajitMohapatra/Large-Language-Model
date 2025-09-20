@@ -5,3 +5,5 @@ faiss-cpu
 pypdf
 llama-index
 python-dotenv
+sentence-transformers
+llama-index-embeddings-huggingface
