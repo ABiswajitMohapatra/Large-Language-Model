@@ -18,7 +18,6 @@ if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
-
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
@@ -70,25 +69,47 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Chat input with upload icon on the left ---
+cols = st.columns([1, 10])  # 1 unit for upload icon, 10 units for chat input
+
+with cols[0]:
+    uploaded_file = st.file_uploader("", type=["txt", "pdf", "docx", "jpg", "png"], label_visibility="collapsed")
+    # Styling the upload icon as a "+" sign in a rounded box
+    st.markdown(
+        """
+        <div style='display:flex; align-items:center; justify-content:center; height:40px;'>
+            <span style='font-size:24px; color:#888; background:#f3f3f3; border-radius:50%; 
+                         display:inline-block; width:36px; height:36px; line-height:36px; text-align:center;'>
+                +
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with cols[1]:
+    prompt = st.chat_input("Say something...")
+
+# --- Process the prompt if submitted ---
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
-
-    # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
     time.sleep(0.5)  # simulate typing
-
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
-
     placeholder.empty()  # Remove typing indicator
+
+# --- Optional: Process uploaded file ---
+if uploaded_file is not None:
+    file_bytes = uploaded_file.read()
+    st.success(f"Uploaded file: {uploaded_file.name}")
+    # You can add logic here to do something with the uploaded file if desired
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
@@ -98,7 +119,7 @@ for msg in st.session_state.current_session:
             f"<b>Agent:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
-    else:  # User
+    else:  # User messages
         st.markdown(
             f"<div style='color:black; text-align:right; margin:5px 0;'>"
             f"<b>User:</b> {msg['message']}</div>",
