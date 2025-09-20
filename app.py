@@ -23,14 +23,22 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo ---
+# --- Logo with animation and welcome text ---
 st.markdown(
     """
-    <div style='text-align: center; margin-bottom: 20px;'>
+    <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto;'>
+             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
     </div>
-    """, unsafe_allow_html=True
+    <style>
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 # --- Message handler ---
@@ -96,14 +104,6 @@ for msg in st.session_state.current_session:
             f"<b>User:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
-
-# --- Auto-scroll ---
-st.markdown("""
-<script>
-var chatContainer = window.parent.document.querySelector('main');
-chatContainer.scrollTo(0, chatContainer.scrollHeight);
-</script>
-""", unsafe_allow_html=True)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
