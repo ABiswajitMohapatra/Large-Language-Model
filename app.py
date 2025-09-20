@@ -18,26 +18,19 @@ if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
+
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo and intro text ---
+# --- Logo ---
 st.markdown(
     """
-    <div style='text-align: center; margin-bottom: 5px;'>
+    <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
+             style='width: 100%; max-width: 350px; height: auto;'>
     </div>
-    <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
+    """, unsafe_allow_html=True
 )
 
 # --- Message handler ---
@@ -45,21 +38,21 @@ def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
 CUSTOM_RESPONSES = {
-    "who created you": "I was created by **Biswajit Mohapatra**, my owner 🚀",
-    "creator": "My creator is **Biswajit Mohapatra**.",
-    "who is your father": "My father is **Biswajit Mohapatra** 👨‍💻",
-    "father": "My father is **Biswajit Mohapatra**.",
-    "who trained you": "I was trained by **Biswajit Mohapatra**.",
-    "trained": "I was trained and fine-tuned by **Biswajit Mohapatra**.",
-    "who built you": "I was built by **Biswajit Mohapatra**.",
-    "built": "I was built by **Biswajit Mohapatra**.",
-    "who developed you": "I was developed by **Biswajit Mohapatra**.",
-    "developed": "I was developed by **Biswajit Mohapatra**.",
-    "who established you": "I was established by **Biswajit Mohapatra**.",
-    "established": "I was established by **Biswajit Mohapatra**.",
-    "made you": "I was made by **Biswajit Mohapatra**.",
-    "owner": "My owner is **Biswajit Mohapatra**.",
-    "contribution": "The contribution of **Biswajit Mohapatra** is creating, developing, training, and establishing me 🚀"
+    "who created you": "I was created by *Biswajit Mohapatra*, my owner 🚀",
+    "creator": "My creator is *Biswajit Mohapatra*.",
+    "who is your father": "My father is *Biswajit Mohapatra* 👨‍💻",
+    "father": "My father is *Biswajit Mohapatra*.",
+    "who trained you": "I was trained by *Biswajit Mohapatra*.",
+    "trained": "I was trained and fine-tuned by *Biswajit Mohapatra*.",
+    "who built you": "I was built by *Biswajit Mohapatra*.",
+    "built": "I was built by *Biswajit Mohapatra*.",
+    "who developed you": "I was developed by *Biswajit Mohapatra*.",
+    "developed": "I was developed by *Biswajit Mohapatra*.",
+    "who established you": "I was established by *Biswajit Mohapatra*.",
+    "established": "I was established by *Biswajit Mohapatra*.",
+    "made you": "I was made by *Biswajit Mohapatra*.",
+    "owner": "My owner is *Biswajit Mohapatra*.",
+    "contribution": "The contribution of *Biswajit Mohapatra* is creating, developing, training, and establishing me 🚀"
 }
 
 def check_custom_response(user_input: str):
@@ -74,58 +67,41 @@ prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
-    
+
     # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)
-    
-    # Check custom responses
+    time.sleep(0.5)  # simulate typing
+
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
-    
-    placeholder.empty()
 
-# --- Scrollable chat area ---
-st.markdown("<div id='chatbox' style='height:500px; overflow-y:auto; padding:5px;'>", unsafe_allow_html=True)
+    placeholder.empty()  # Remove typing indicator
+
+# --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='color:black; text-align:left; margin:5px 0;'><b>Agent:</b> <i>{msg['message']}</i></div>", unsafe_allow_html=True)
-    else:
-        st.markdown(f"<div style='color:black; text-align:right; margin:5px 0;'><b>User:</b> {msg['message']}</div>", unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='color:black; text-align:left; margin:5px 0;'>"
+            f"<b>Agent:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='color:black; text-align:right; margin:5px 0;'>"
+            f"<b>User:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
 
-# --- Manual scroll arrow (no auto-scroll) ---
+# --- Auto-scroll ---
 st.markdown("""
-<style>
-#scroll-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: #06d6a0;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-    cursor: pointer;
-}
-#scroll-btn:hover {
-    background-color: #05c18b;
-}
-</style>
-<button id="scroll-btn">&#8595;</button>
 <script>
-var chatContainer = document.querySelector('#chatbox');
-var scrollBtn = document.querySelector('#scroll-btn');
-scrollBtn.onclick = function() {
-    if (chatContainer) { chatContainer.scrollTo(0, chatContainer.scrollHeight); }
-};
+var chatContainer = window.parent.document.querySelector('main');
+chatContainer.scrollTo(0, chatContainer.scrollHeight);
 </script>
 """, unsafe_allow_html=True)
 
