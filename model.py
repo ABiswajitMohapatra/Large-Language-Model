@@ -6,9 +6,11 @@ from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
+# Load Groq API key from environment (Streamlit secrets)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
+# Dummy embedding (replace with HuggingFace/OpenAI later for real RAG)
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
@@ -17,9 +19,16 @@ class CustomEmbedding(BaseEmbedding):
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
+# --- Load documents safely ---
 def load_documents():
-    return SimpleDirectoryReader('Sanjukta').load_data()
+    folder = "Sanjukta"
+    if os.path.exists(folder):
+        return SimpleDirectoryReader(folder).load_data()
+    else:
+        print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
+        return []
 
+# --- Create or load index ---
 def create_or_load_index():
     index_file = "index.pkl"
     if os.path.exists(index_file):
@@ -33,6 +42,7 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
+# --- Query Groq LLM ---
 def query_groq_api(prompt: str):
     chat_completion = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -40,20 +50,21 @@ def query_groq_api(prompt: str):
     )
     return chat_completion.choices[0].message.content
 
+# --- Summarize old messages ---
 def summarize_messages(messages):
-    """Summarize a list of messages into a short summary."""
     text = ""
     for msg in messages:
         text += f"{msg['role']}: {msg['message']}\n"
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
+# --- Main chat with RAG + memory ---
 def chat_with_agent(query, index, chat_history, memory_limit=12):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
 
-    # Split history into old and recent messages
+    # Manage memory
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
@@ -68,6 +79,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12):
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
+    # Final prompt
     prompt = (
         f"Context from documents: {context}\n"
         f"Conversation so far:\n{conversation_text}\n"
