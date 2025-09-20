@@ -13,6 +13,8 @@ if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
+if 'uploaded_content' not in st.session_state:
+    st.session_state.uploaded_content = ""
 
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
@@ -58,24 +60,20 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- File Upload Section ---
-uploaded_file = st.file_uploader("Upload PDF or Image", type=["pdf","png","jpg","jpeg"])
-if uploaded_file:
-    extracted_text = ""
-    if uploaded_file.type == "application/pdf":
-        extracted_text = extract_text_from_pdf(uploaded_file)
-    elif uploaded_file.type.startswith("image/"):
-        extracted_text = extract_text_from_image(uploaded_file)
+# --- Custom chat input with "+" icon for upload ---
+col1, col2 = st.columns([0.1, 0.9])
+with col1:
+    uploaded_file = st.file_uploader("", type=["pdf", "png", "jpg", "jpeg"], label_visibility="collapsed")
+    if uploaded_file:
+        if uploaded_file.type == "application/pdf":
+            st.session_state.uploaded_content = extract_text_from_pdf(uploaded_file)
+        elif uploaded_file.type.startswith("image/"):
+            st.session_state.uploaded_content = extract_text_from_image(uploaded_file)
 
-    st.subheader("Extracted Text")
-    st.text_area("Content", extracted_text, height=300)
-
-    if st.button("Summarize Uploaded Content"):
-        summary = chat_with_agent(extracted_text, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", summary)
+with col2:
+    prompt = st.chat_input("Say something...")
 
 # --- Chat Section ---
-prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
@@ -88,7 +86,10 @@ if prompt:
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+        context = prompt
+        if st.session_state.uploaded_content:
+            context += "\n\n" + st.session_state.uploaded_content
+        answer = chat_with_agent(context, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
     placeholder.empty()
