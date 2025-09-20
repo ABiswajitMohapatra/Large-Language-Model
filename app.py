@@ -1,79 +1,50 @@
 import streamlit as st
-import time
-from model import (
-    load_documents, create_or_load_index, chat_with_agent,
-    extract_text_from_pdf, extract_text_from_image
-)
+from io import BytesIO
 
-st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
+st.set_page_config(page_title="Biswa Search", page_icon="🔍", layout="wide")
 
-if 'index' not in st.session_state:
-    st.session_state.index = create_or_load_index()
-if 'sessions' not in st.session_state:
-    st.session_state.sessions = []
-if 'current_session' not in st.session_state:
-    st.session_state.current_session = []
-if 'uploaded_content' not in st.session_state:
-    st.session_state.uploaded_content = ""
-
-st.sidebar.title("Chats")
-if st.sidebar.button("New Chat"):
-    st.session_state.current_session = []
-if st.sidebar.button("Clear Chat"):
-    st.session_state.current_session = []
-
-for i, sess in enumerate(st.session_state.sessions):
-    if st.sidebar.button(f"Session {i+1}"):
-        st.session_state.current_session = sess.copy()
-
-st.markdown(
-    """
-    <div style='text-align: center; margin-bottom: 10px;'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
-    </div>
+st.markdown("""
     <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-
-    /* Custom chat input bar */
-    .chat-bar {
-        display: flex;
-        align-items: center;
-        border: 1px solid #ddd;
-        border-radius: 20px;
-        padding: 5px 10px;
-        margin-top: 15px;
-    }
-    .chat-bar input[type="file"] {
-        display: none;
-    }
-    .chat-bar label {
-        font-size: 22px;
-        color: gray;
-        cursor: pointer;
-        margin-right: 10px;
-    }
-    .chat-bar input[type="text"] {
-        flex: 1;
-        border: none;
-        outline: none;
-        font-size: 16px;
-    }
-    .chat-bar button {
-        background: none;
-        border: none;
-        font-size: 20px;
-        cursor: pointer;
-        color: gray;
-    }
+        .search-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 50px;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            border: 2px solid #ccc;
+            border-radius: 25px;
+            padding: 8px 15px;
+            width: 500px;
+            background-color: white;
+        }
+        .search-box input {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 16px;
+        }
+        .plus-icon {
+            font-size: 22px;
+            font-weight: bold;
+            color: #555;
+            margin-right: 10px;
+            cursor: pointer;
+        }
     </style>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <div class="search-container">
+        <div class="search-box">
+            <label for="file_input" class="plus-icon">+</label>
+            <input type="file" id="file_input" style="display:none" accept=".pdf,.png,.jpg,.jpeg">
+            <input type="text" placeholder="Search or type something...">
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
@@ -150,3 +121,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
