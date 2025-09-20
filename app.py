@@ -1,21 +1,18 @@
 import streamlit as st
+from model import load_documents, create_or_load_index, chat_with_agent
 import time
-from model import (
-    load_documents, create_or_load_index, chat_with_agent,
-    extract_text_from_pdf, extract_text_from_image
-)
 
 st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
 
+# --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
 if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
-if 'uploaded_content' not in st.session_state:
-    st.session_state.uploaded_content = ""
 
+# --- Sidebar ---
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
@@ -26,6 +23,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
+# --- Logo with animation and welcome text ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 10px;'>
@@ -38,52 +36,31 @@ st.markdown(
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
     }
-
-    /* Custom chat input bar */
-    .chat-bar {
-        display: flex;
-        align-items: center;
-        border: 1px solid #ddd;
-        border-radius: 20px;
-        padding: 5px 10px;
-        margin-top: 15px;
-    }
-    .chat-bar input[type="file"] {
-        display: none;
-    }
-    .chat-bar label {
-        font-size: 22px;
-        color: gray;
-        cursor: pointer;
-        margin-right: 10px;
-    }
-    .chat-bar input[type="text"] {
-        flex: 1;
-        border: none;
-        outline: none;
-        font-size: 16px;
-    }
-    .chat-bar button {
-        background: none;
-        border: none;
-        font-size: 20px;
-        cursor: pointer;
-        color: gray;
-    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
+# --- Message handler ---
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
 CUSTOM_RESPONSES = {
-    "who created you": "I was created by *Biswajit Mohapatra*, my owner 🚀",
-    "creator": "My creator is *Biswajit Mohapatra*.",
-    "who is your father": "My father is *Biswajit Mohapatra* 👨‍💻",
-    "trained": "I was trained and fine-tuned by *Biswajit Mohapatra*.",
-    "owner": "My owner is *Biswajit Mohapatra*."
+    "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
+    "creator": "My creator is Biswajit Mohapatra.",
+    "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
+    "father": "My father is Biswajit Mohapatra.",
+    "who trained you": "I was trained by Biswajit Mohapatra.",
+    "trained": "I was trained and fine-tuned by Biswajit Mohapatra.",
+    "who built you": "I was built by Biswajit Mohapatra.",
+    "built": "I was built by Biswajit Mohapatra.",
+    "who developed you": "I was developed by Biswajit Mohapatra.",
+    "developed": "I was developed by Biswajit Mohapatra.",
+    "who established you": "I was established by Biswajit Mohapatra.",
+    "established": "I was established by Biswajit Mohapatra.",
+    "made you": "I was made by Biswajit Mohapatra.",
+    "owner": "My owner is Biswajit Mohapatra.",
+    "contribution": "The contribution of Biswajit Mohapatra is creating, developing, training, and establishing me 🚀"
 }
 
 def check_custom_response(user_input: str):
@@ -93,60 +70,42 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Custom Search/Chat Bar ---
-with st.form("chat_form", clear_on_submit=True):
-    st.markdown(
-        """
-        <div class="chat-bar">
-            <label for="fileUpload">+</label>
-            <input type="file" id="fileUpload" name="fileUpload" accept=".pdf,.png,.jpg,.jpeg">
-            <input type="text" name="user_input" placeholder="Say something...">
-            <button type="submit">➤</button>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    submitted = st.form_submit_button("")
+# --- Chat input ---
+prompt = st.chat_input("Say something...")
+if prompt:
+    add_message("User", prompt)
+    normalized_prompt = prompt.strip().lower()
 
-# Handle uploaded file
-uploaded_file = st.file_uploader("hidden", type=["pdf","png","jpg","jpeg"], label_visibility="collapsed")
-if uploaded_file:
-    if uploaded_file.type == "application/pdf":
-        st.session_state.uploaded_content = extract_text_from_pdf(uploaded_file)
-    elif uploaded_file.type.startswith("image/"):
-        st.session_state.uploaded_content = extract_text_from_image(uploaded_file)
+    # Typing indicator
+    placeholder = st.empty()
+    placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
+    time.sleep(0.5)  # simulate typing
 
-# Handle chat input
-if submitted and "user_input" in st.query_params:
-    prompt = st.query_params["user_input"]
-    if prompt:
-        add_message("User", prompt)
-        normalized_prompt = prompt.strip().lower()
+    custom_answer = check_custom_response(normalized_prompt)
+    if custom_answer:
+        add_message("Agent", custom_answer)
+    else:
+        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+        add_message("Agent", answer)
 
-        placeholder = st.empty()
-        placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-        time.sleep(0.5)
+    placeholder.empty()  # Remove typing indicator
 
-        custom_answer = check_custom_response(normalized_prompt)
-        if custom_answer:
-            add_message("Agent", custom_answer)
-        else:
-            context = prompt
-            if st.session_state.uploaded_content:
-                context += "\n\n" + st.session_state.uploaded_content
-            answer = chat_with_agent(context, st.session_state.index, st.session_state.current_session)
-            add_message("Agent", answer)
-
-        placeholder.empty()
-
-# Display chat history
+# --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
-    align = "left" if msg['role'] == "Agent" else "right"
-    st.markdown(
-        f"<div style='color:black; text-align:{align}; margin:5px 0;'><b>{msg['role']}:</b> {msg['message']}</div>",
-        unsafe_allow_html=True
-    )
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='color:black; text-align:left; margin:5px 0;'>"
+            f"<b>Agent:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='color:black; text-align:right; margin:5px 0;'>"
+            f"<b>User:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
 
+# --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
