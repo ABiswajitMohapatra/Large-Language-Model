@@ -23,13 +23,20 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo ---
+# --- Logo with animation and intro text ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto;'>
+             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
     </div>
+    <style>
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    </style>
     """, unsafe_allow_html=True
 )
 
@@ -73,6 +80,7 @@ if prompt:
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
     time.sleep(0.5)  # simulate typing
 
+    # Check for custom responses first
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
@@ -82,12 +90,14 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with left-right alignment ---
+# --- Scrollable chat area ---
+st.markdown("<div id='chatbox' style='height:500px; overflow-y:auto; padding:5px;'>", unsafe_allow_html=True)
+
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
             f"<div style='color:black; text-align:left; margin:5px 0;'>"
-            f"<b>Agent:</b> {msg['message']}</div>",
+            f"<b>Agent:</b> <i>{msg['message']}</i></div>",
             unsafe_allow_html=True
         )
     else:  # User
@@ -97,11 +107,13 @@ for msg in st.session_state.current_session:
             unsafe_allow_html=True
         )
 
-# --- Auto-scroll ---
+st.markdown("</div>", unsafe_allow_html=True)
+
+# Auto-scroll inside chatbox
 st.markdown("""
 <script>
-var chatContainer = window.parent.document.querySelector('main');
-chatContainer.scrollTo(0, chatContainer.scrollHeight);
+var chatContainer = window.parent.document.querySelector('#chatbox');
+if (chatContainer) { chatContainer.scrollTo(0, chatContainer.scrollHeight); }
 </script>
 """, unsafe_allow_html=True)
 
