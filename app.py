@@ -105,7 +105,7 @@ for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
         st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>",
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
             unsafe_allow_html=True
         )
     else:  # User
@@ -118,3 +118,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
