@@ -4,21 +4,22 @@ from firebase_admin import credentials, firestore
 
 if not firebase_admin._apps:
     cred_dict = {
-        "type": st.secrets["FIREBASE_TYPE"],
-        "project_id": st.secrets["FIREBASE_PROJECT_ID"],
-        "private_key_id": st.secrets["FIREBASE_PRIVATE_KEY_ID"],
-        "private_key": st.secrets["FIREBASE_PRIVATE_KEY"].replace("\\n", "\n"),
-        "client_email": st.secrets["FIREBASE_CLIENT_EMAIL"],
-        "client_id": st.secrets["FIREBASE_CLIENT_ID"],
-        "auth_uri": st.secrets["FIREBASE_AUTH_URI"],
-        "token_uri": st.secrets["FIREBASE_TOKEN_URI"],
-        "auth_provider_x509_cert_url": st.secrets["FIREBASE_AUTH_PROVIDER_CERT_URL"],
-        "client_x509_cert_url": st.secrets["FIREBASE_CLIENT_CERT_URL"]
+        "type": st.secrets["FIREBASE"]["type"],
+        "project_id": st.secrets["FIREBASE"]["project_id"],
+        "private_key_id": st.secrets["FIREBASE"]["private_key_id"],
+        "private_key": st.secrets["FIREBASE"]["private_key"].replace("\\n", "\n"),
+        "client_email": st.secrets["FIREBASE"]["client_email"],
+        "client_id": st.secrets["FIREBASE"]["client_id"],
+        "auth_uri": st.secrets["FIREBASE"]["auth_uri"],
+        "token_uri": st.secrets["FIREBASE"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["FIREBASE"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["FIREBASE"]["client_x509_cert_url"]
     }
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
 
 
 # --- Load sessions from Firebase ---
@@ -145,6 +146,7 @@ if st.sidebar.button("Save Session"):
     save_session_to_firebase()
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
