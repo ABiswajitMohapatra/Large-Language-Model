@@ -71,7 +71,31 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Chat input + compact image icon (no CSS) ---
+col1, col2 = st.columns([8, 1])
+
+with col1:
+    prompt = st.chat_input("Ask anything...")
+
+with col2:
+    # shows only a small 📷 icon; the actual uploader lives inside the popover
+    if hasattr(st, "popover"):
+        with st.popover("📷", use_container_width=True):
+            uploaded_file = st.file_uploader(
+                "Attach image",
+                type=["png", "jpg", "jpeg", "webp"],
+                label_visibility="collapsed",
+                key="chat_img",
+            )
+    else:
+        # fallback for older Streamlit: still minimal
+        uploaded_file = st.file_uploader(
+            "📷 Attach image",
+            type=["png", "jpg", "jpeg", "webp"],
+            key="chat_img",
+        )
+
+
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
@@ -109,3 +133,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
