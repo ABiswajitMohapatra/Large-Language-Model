@@ -100,7 +100,7 @@ with col1:
         key="chat_input",
         placeholder="Type your message here...",
         label_visibility="collapsed",
-        icon=":material_add:"
+        icon=":material_send:"  # Corrected icon syntax
     )
 
 with col2:
