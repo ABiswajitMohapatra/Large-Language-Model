@@ -23,7 +23,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo ---
+# --- Logo with animation and welcome text ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 10px;'>
@@ -35,32 +35,6 @@ st.markdown(
     @keyframes bounce {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
-    }
-    .chat-container {
-        display: flex;
-        align-items: center;
-        max-width: 800px;
-        margin: 10px auto;
-        border: 1px solid #ccc;
-        border-radius: 25px;
-        padding: 5px 10px;
-        background-color: #f9f9f9;
-    }
-    .chat-input {
-        flex: 1;
-        border: none;
-        outline: none;
-        padding: 10px;
-        font-size: 16px;
-        border-radius: 25px;
-        background-color: #f9f9f9;
-    }
-    .upload-btn {
-        background-color: transparent;
-        border: none;
-        font-size: 20px;
-        cursor: pointer;
-        margin-left: 5px;
     }
     </style>
     """,
@@ -96,21 +70,16 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Custom GPT-style input bar with + upload ---
-col1, col2 = st.columns([8,1])
-with col1:
-    prompt = st.text_input("Ask anything...", key="chat_input")
-with col2:
-    uploaded_file = st.file_uploader("", label="+", type=["pdf", "png", "jpg", "jpeg"], label_visibility="collapsed")
-
-# --- Handle chat input ---
+# --- Chat input ---
+prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
+    # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)
+    time.sleep(0.5)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -119,20 +88,22 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()
-    st.experimental_rerun()
+    placeholder.empty()  # Remove typing indicator
 
-# --- Handle uploaded file ---
-if uploaded_file:
-    add_message("User", f"Uploaded file: {uploaded_file.name}")
-    st.experimental_rerun()
-
-# --- Display messages ---
+# --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left; color:black; margin:5px 0;'><b>Agent:</b> {msg['message']}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown(f"<div style='text-align:right; color:black; margin:5px 0;'><b>User:</b> {msg['message']}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='color:black; text-align:left; margin:5px 0;'>"
+            f"<b>Agent:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='color:black; text-align:right; margin:5px 0;'>"
+            f"<b>User:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
