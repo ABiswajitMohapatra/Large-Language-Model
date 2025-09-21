@@ -20,6 +20,7 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
+
 # --- Load sessions from Firebase ---
 def load_sessions_from_firebase():
     sessions = []
@@ -144,6 +145,7 @@ if st.sidebar.button("Save Session"):
     save_session_to_firebase()
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
