@@ -1,10 +1,12 @@
 import streamlit as st
+import time
 import firebase_admin
 from firebase_admin import credentials, firestore
+from model import load_documents, create_or_load_index, chat_with_agent
 
+# --- Initialize Firebase ---
 if not firebase_admin._apps:
-    cred_dict = dict(st.secrets["FIREBASE"])  # Already a dict
-    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+    cred_dict = dict(st.secrets["FIREBASE"])
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
@@ -13,9 +15,14 @@ db = firestore.client()
 # --- Load sessions from Firebase ---
 def load_sessions_from_firebase():
     sessions = []
-    docs = db.collection("chat_sessions").stream()
-    for doc in docs:
-        sessions.append(doc.to_dict()["messages"])
+    try:
+        docs = db.collection("chat_sessions").stream()
+        for doc in docs:
+            data = doc.to_dict()
+            if "messages" in data:
+                sessions.append(data["messages"])
+    except Exception:
+        pass
     return sessions
 
 # --- Save current session to Firebase ---
@@ -38,7 +45,6 @@ if st.sidebar.button("New Chat"):
 if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
 
-# Load previous sessions from sidebar buttons
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
@@ -49,7 +55,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help with!😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help you! 😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -66,7 +72,7 @@ def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
 CUSTOM_RESPONSES = {
-    "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
+    "who created you": "I was created by Biswajit Mohapatra 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
     "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
     "father": "My father is Biswajit Mohapatra.",
@@ -134,9 +140,3 @@ if st.sidebar.button("Save Session"):
     save_session_to_firebase()
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
-
-
-
-
-
