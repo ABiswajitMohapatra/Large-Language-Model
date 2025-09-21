@@ -2,17 +2,15 @@
 import time
 import streamlit as st
 
-
 def run_chat_input(add_message, check_custom_response, chat_with_agent):
     """
-    Sticky bottom bar styled like reference:
-      • '+' circular button at bottom-left for image upload
-      • rounded white chat input centered
-      • mic + blue badge on right
-      • input bar stays fixed at bottom when scrolling
+    Sticky bottom chat bar styled like your reference.
+    The image uploader is a real, clickable '+' circle pinned to the
+    bottom-left of the bar (no big uploader in the middle).
+    Your function signatures remain unchanged.
     """
 
-    # ===== CSS =====
+    # ---------- CSS: fix bar to bottom + make uploader a '+' circle ----------
     st.markdown("""
     <style>
     :root{
@@ -20,10 +18,10 @@ def run_chat_input(add_message, check_custom_response, chat_with_agent):
       --bar-bottom: 14px;
     }
 
-    /* space for fixed bar */
+    /* keep space so the fixed bar doesn't overlap page content */
     .main .block-container{ padding-bottom: 110px !important; }
 
-    /* Fix chat input at bottom */
+    /* Fix the Streamlit chat input to the bottom center */
     [data-testid="stChatInput"]{
       position: fixed !important;
       left: 50% !important;
@@ -34,7 +32,7 @@ def run_chat_input(add_message, check_custom_response, chat_with_agent):
     }
     [data-testid="stChatInput"] textarea,
     [data-testid="stChatInput"] input{
-      background:#fff !important;
+      background:#ffffff !important;
       color:#111827 !important;
       border:1px solid #e5e7eb !important;
       border-radius:28px !important;
@@ -46,31 +44,48 @@ def run_chat_input(add_message, check_custom_response, chat_with_agent):
       outline:none !important; box-shadow:none !important;
     }
 
-    /* left '+' circle */
-    #chat-plus{
-      position: fixed; bottom: var(--bar-bottom);
-      left: calc(50% - var(--bar-width)/2 - 56px);
-      width: 44px; height: 44px; border-radius: 50%;
-      background:#fff; border:1px solid #e5e7eb;
+    /* REAL uploader styled as a '+' circle and pinned at bottom-left */
+    #upload-hotspot [data-testid="stFileUploaderDropzone"]{
+      position: fixed !important;
+      left: calc(50% - var(--bar-width)/2 - 56px) !important;
+      bottom: var(--bar-bottom) !important;
+      width:44px !important; height:44px !important;
+      border-radius:50% !important;
+      border:1px solid #e5e7eb !important;
+      background:#ffffff !important;
+      box-shadow:0 1px 2px rgba(0,0,0,0.04) !important;
+      padding:0 !important; margin:0 !important;
+      z-index: 9999 !important;
+    }
+    /* kill default look & center inner button */
+    #upload-hotspot [data-testid="stFileUploaderDropzone"] div[role="button"]{
+      background: transparent !important;
+      border: none !important;
+      width:44px !important; height:44px !important;
       display:flex; align-items:center; justify-content:center;
-      color:#111827; font-weight:600; font-size:22px;
-      box-shadow:0 1px 2px rgba(0,0,0,0.04);
-      cursor:pointer; z-index:9999;
-      transition: transform .15s ease, background .15s ease;
+      cursor:pointer;
     }
-    #chat-plus:hover{ background:#f9fafb; transform:scale(1.05); }
-
-    /* hide uploader UI (we'll show filename only) */
-    .hidden-upload [data-testid="stFileUploaderDropzone"]{
-      border:none !important; background:transparent !important; padding:0 !important;
+    /* hide default icon/text and draw a '+' */
+    #upload-hotspot [data-testid="stFileUploaderDropzone"] svg,
+    #upload-hotspot [data-testid="stFileUploaderDropzone"] p{ display:none !important; }
+    #upload-hotspot [data-testid="stFileUploaderDropzone"] div[role="button"]::before{
+      content: "+";
+      font-size:22px; font-weight:600; color:#111827;
+      line-height:1;
     }
-    .hidden-upload svg, .hidden-upload p{ display:none !important; }
+    #upload-hotspot [data-testid="stFileUploaderDropzone"]:hover{
+      background:#f9fafb !important;
+      transform: scale(1.05);
+      transition: transform .15s ease;
+    }
 
-    /* right icons */
+    /* Right-side mic + blue badge pinned to bottom-right of the bar */
     #chat-right{
-      position: fixed; bottom: var(--bar-bottom);
-      left: calc(50% + var(--bar-width)/2 + 12px);
-      display:flex; gap:10px; align-items:center; z-index:9999;
+      position: fixed !important; 
+      bottom: var(--bar-bottom) !important;
+      left: calc(50% + var(--bar-width)/2 + 12px) !important;
+      display:flex; gap:10px; align-items:center;
+      z-index: 9999 !important;
     }
     #chat-right .mic{ font-size:18px; color:#111827; }
     #chat-right .blue-badge{
@@ -85,17 +100,20 @@ def run_chat_input(add_message, check_custom_response, chat_with_agent):
     </style>
     """, unsafe_allow_html=True)
 
-    # ===== LEFT “+” BUTTON =====
-    st.markdown('<div id="chat-plus">+</div>', unsafe_allow_html=True)
-    # invisible uploader (still works, triggered manually)
+    # ---------- Render ONLY ONE uploader (our fixed '+' hotspot) ----------
     with st.container():
-        st.markdown('<div class="hidden-upload">', unsafe_allow_html=True)
-        img = st.file_uploader("Attach image", type=["png","jpg","jpeg","webp"], key="chat_img")
+        st.markdown('<div id="upload-hotspot">', unsafe_allow_html=True)
+        img = st.file_uploader(
+            "Attach image",
+            type=["png","jpg","jpeg","webp"],
+            key="chat_img",
+            label_visibility="collapsed",
+        )
         st.markdown('</div>', unsafe_allow_html=True)
         if img is not None:
-            st.toast(f"Attached: {img.name}")
+            st.toast(f"Image attached: {img.name}")
 
-    # ===== RIGHT ICONS =====
+    # ---------- Right-side decorative icons ----------
     st.markdown(
         '<div id="chat-right">'
         '<span class="mic">🎤</span>'
@@ -104,12 +122,12 @@ def run_chat_input(add_message, check_custom_response, chat_with_agent):
         unsafe_allow_html=True
     )
 
-    # ===== INPUT =====
+    # ---------- The actual input (fixed to bottom) ----------
     prompt = st.chat_input("Ask anything")
     if not prompt:
         return
 
-    # ===== LOGIC (unchanged) =====
+    # ---------- Logic (unchanged) ----------
     add_message("User", prompt)
     if st.session_state.get("chat_img") is not None:
         add_message("User", f"[image attached: {st.session_state['chat_img'].name}]")
