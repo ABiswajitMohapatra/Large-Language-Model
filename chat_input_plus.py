@@ -3,7 +3,7 @@ import time
 import streamlit as st
 
 
-def run_chat_input_simple(
+def run_chat_input(
     add_message,
     check_custom_response,
     chat_with_agent,
@@ -61,3 +61,4 @@ def run_chat_input_simple(
 
     # Remove typing indicator
     placeholder.empty()
+
