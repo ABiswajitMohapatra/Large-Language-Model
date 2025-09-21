@@ -71,22 +71,7 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Chat input ---
-prompt = st.chat_input(
-    """
-    <div style="
-      display:flex; align-items:center; justify-content:space-between;
-      width:100%; max-width:100%;
-      background:#ffffff; border:1px solid #e5e7eb; border-radius:28px;
-      box-shadow:0 1px 2px rgba(0,0,0,0.04); padding:10px 12px;
-    ">
-      <input id="file-upload" type="file" accept="image/*" style="display:none;" />
-      <span style="flex:1; color:#9ca3af; font-size:14px; line-height:1;">
-        Ask anything
-      </span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+prompt = st.chat_input("Ask anthing...")
 
 if prompt:
     add_message("User", prompt)
@@ -128,4 +113,5 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
