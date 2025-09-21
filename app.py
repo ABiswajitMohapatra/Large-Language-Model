@@ -1,16 +1,25 @@
 import streamlit as st
-import json
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# --- Initialize Firebase only once ---
 if not firebase_admin._apps:
-    # Convert the string from secrets into a Python dictionary
-    cred_dict = json.loads(st.secrets["FIREBASE"])
+    cred_dict = {
+        "type": st.secrets["FIREBASE_TYPE"],
+        "project_id": st.secrets["FIREBASE_PROJECT_ID"],
+        "private_key_id": st.secrets["FIREBASE_PRIVATE_KEY_ID"],
+        "private_key": st.secrets["FIREBASE_PRIVATE_KEY"].replace("\\n", "\n"),
+        "client_email": st.secrets["FIREBASE_CLIENT_EMAIL"],
+        "client_id": st.secrets["FIREBASE_CLIENT_ID"],
+        "auth_uri": st.secrets["FIREBASE_AUTH_URI"],
+        "token_uri": st.secrets["FIREBASE_TOKEN_URI"],
+        "auth_provider_x509_cert_url": st.secrets["FIREBASE_AUTH_PROVIDER_CERT_URL"],
+        "client_x509_cert_url": st.secrets["FIREBASE_CLIENT_CERT_URL"]
+    }
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
 # --- Load sessions from Firebase ---
 def load_sessions_from_firebase():
     sessions = []
@@ -135,5 +144,6 @@ if st.sidebar.button("Save Session"):
     save_session_to_firebase()
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
