@@ -76,10 +76,29 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # Typing indicator
+    # --- Typing indicator with backward arrow animation ---
     placeholder = st.empty()
-    placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
+    placeholder.markdown(
+        """
+        <div style="display:flex; align-items:center; color:gray; font-style:italic;">
+            <span style="margin-right:5px;">Agent is typing</span>
+            <span class="arrow">&#10148;</span>
+        </div>
+        <style>
+        .arrow {
+            display:inline-block;
+            animation: moveArrow 1s infinite linear;
+        }
+        @keyframes moveArrow {
+            0% { transform: translateX(0) rotate(180deg); }
+            50% { transform: translateX(-10px) rotate(180deg); }
+            100% { transform: translateX(0) rotate(180deg); }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    time.sleep(1)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -89,18 +108,19 @@ if prompt:
         add_message("Agent", answer)
 
     placeholder.empty()  # Remove typing indicator
+    # --- End of typing indicator ---
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
-            f"<div style='color:black; text-align:left; margin:5px 0;'>"
+            f"<div style='background-color:#f0f0f0; color:black; padding:10px; border-radius:10px; margin:5px 0; max-width:70%; text-align:left;'>"
             f"<b>Agent:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
     else:  # User
         st.markdown(
-            f"<div style='color:black; text-align:right; margin:5px 0;'>"
+            f"<div style='background-color:#a0e7e5; color:black; padding:10px; border-radius:10px; margin:5px 0; max-width:70%; text-align:right; margin-left:auto;'>"
             f"<b>User:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
