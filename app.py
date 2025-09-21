@@ -70,45 +70,25 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Custom GPT-like input bar (with + upload icon) ---
-col1, col2 = st.columns([10, 1])
-
-with col1:
-    user_input = st.text_input(
-        "Say something...",
-        placeholder="Say something...",
-        label_visibility="collapsed"
-    )
-
-with col2:
-    uploaded_file = st.file_uploader(
-        "",
-        type=["pdf", "png", "jpg", "jpeg"],
-        label_visibility="collapsed"
-    )
-
-# --- Handle input ---
-if user_input:
-    add_message("User", user_input)
-    normalized_prompt = user_input.strip().lower()
+# --- Chat input ---
+prompt = st.chat_input("Say something...")
+if prompt:
+    add_message("User", prompt)
+    normalized_prompt = prompt.strip().lower()
 
     # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)
+    time.sleep(0.5)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        answer = chat_with_agent(user_input, st.session_state.index, st.session_state.current_session)
+        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()
-
-if uploaded_file:
-    add_message("User", f"📎 Uploaded file: {uploaded_file.name}")
-    add_message("Agent", f"Got your file: {uploaded_file.name}. I’ll process it soon!")
+    placeholder.empty()  # Remove typing indicator
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
