@@ -10,3 +10,5 @@ pytesseract
 PyPDF2
 pdfplumber
 easyocr
+firebase-admin
+
