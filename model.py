@@ -55,10 +55,25 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
+# RAG Integration: New retrieval function
+# This function should be updated with actual retrieval logic
+# For now, it returns empty or static list as demonstration
+
+def rag_retrieve(query: str) -> list[str]:
+    # Placeholder for current/private data retrieval
+    results = []
+    # Add your current or private data fetching logic here
+    return results
+
+# Updated chat_with_agent with RAG context injection
+
 def chat_with_agent(query, index, chat_history, memory_limit=12):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
+
+    rag_results = rag_retrieve(query)
+    rag_context = "\n".join(rag_results)
 
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
@@ -68,13 +83,13 @@ def chat_with_agent(query, index, chat_history, memory_limit=12):
     else:
         recent_messages = chat_history
         conversation_text = ""
-
     for msg in recent_messages:
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
     prompt = (
         f"Context from documents: {context}\n"
+        f"Context from current/private data: {rag_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
         "Answer the user's last query in context."
     )
