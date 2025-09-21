@@ -90,20 +90,22 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with Streamlit Chat UI ---
+# --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
-    if msg["role"] == "User":
-        role = "user"  # user messages aligned right
-        avatar = "🧑‍💻"
-    else:
-        role = "assistant"  # agent messages aligned left
-        avatar = "🤖"
-    with st.chat_message(role, avatar=avatar):
-        st.markdown(msg["message"])
-
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='color:black; text-align:left; margin:5px 0;'>"
+            f"<b>Agent:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='color:black; text-align:right; margin:5px 0;'>"
+            f"<b>User:</b> {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
