@@ -2,7 +2,7 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
 
-st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
+st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -100,28 +100,16 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with avatars ---
+# --- Display messages with scientific emojis ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
-            f"""
-            <div style='display:flex; align-items:center; margin:5px 0;'>
-                <div style='width:30px; height:30px; background-color:#888; border-radius:50%; 
-                            color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-right:10px;'>A</div>
-                <div>{msg['message']}</div>
-            </div>
-            """,
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ {msg['message']}</div>",
             unsafe_allow_html=True
         )
     else:  # User
         st.markdown(
-            f"""
-            <div style='display:flex; align-items:center; justify-content:flex-end; margin:5px 0;'>
-                <div style='margin-right:10px;'>{msg['message']}</div>
-                <div style='width:30px; height:30px; background-color:#1E90FF; border-radius:50%; 
-                            color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;'>U</div>
-            </div>
-            """,
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 {msg['message']}</div>",
             unsafe_allow_html=True
         )
 
