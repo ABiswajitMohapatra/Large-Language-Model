@@ -4,6 +4,7 @@ import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
 
+# --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
 if 'sessions' not in st.session_state:
@@ -22,7 +23,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo ---
+# --- Logo with animation and welcome text ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 10px;'>
@@ -50,7 +51,16 @@ CUSTOM_RESPONSES = {
     "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
     "father": "My father is Biswajit Mohapatra.",
     "who trained you": "I was trained by Biswajit Mohapatra.",
-    "trained": "I was trained and fine-tuned by Biswajit Mohapatra."
+    "trained": "I was trained and fine-tuned by Biswajit Mohapatra.",
+    "who built you": "I was built by Biswajit Mohapatra.",
+    "built": "I was built by Biswajit Mohapatra.",
+    "who developed you": "I was developed by Biswajit Mohapatra.",
+    "developed": "I was developed by Biswajit Mohapatra.",
+    "who established you": "I was established by Biswajit Mohapatra.",
+    "established": "I was established by Biswajit Mohapatra.",
+    "made you": "I was made by Biswajit Mohapatra.",
+    "owner": "My owner is Biswajit Mohapatra.",
+    "contribution": "The contribution of Biswajit Mohapatra is creating, developing, training, and establishing me 🚀"
 }
 
 def check_custom_response(user_input: str):
@@ -66,7 +76,7 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # Typing indicator
+    # --- Typing indicator with backward arrow animation ---
     placeholder = st.empty()
     placeholder.markdown(
         """
@@ -88,7 +98,7 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)
+    time.sleep(1)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -97,41 +107,14 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()
+    placeholder.empty()  # Remove typing indicator
 
-# --- Display messages inside a container to preserve scroll ---
-chat_container = st.container()
-with chat_container:
-    st.markdown(
-        """
-        <div id="chat-box" style="max-height:500px; overflow-y:auto; border:1px solid #ccc; padding:10px;">
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    for msg in st.session_state.current_session:
-        if msg['role'] == "Agent":
-            st.markdown(
-                f"<div style='background-color:#f0f0f0; padding:10px; border-radius:10px; margin:5px 0; max-width:70%; text-align:left;'>"
-                f"<b>Agent:</b> {msg['message']}</div>", unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                f"<div style='background-color:#a0e7e5; padding:10px; border-radius:10px; margin:5px 0; max-width:70%; text-align:right; margin-left:auto;'>"
-                f"<b>User:</b> {msg['message']}</div>", unsafe_allow_html=True
-            )
-
-# --- Manual scroll-down arrow ---
-st.markdown(
-    """
-    <div style='text-align:center; margin-top:5px;'>
-        <span style='font-size:24px; cursor:pointer;' onclick="
-        var chatBox = window.parent.document.querySelector('#chat-box'); 
-        chatBox.scrollTop = chatBox.scrollHeight;">&#x25BC;</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# --- Display messages without bubbles / styling ---
+for msg in st.session_state.current_session:
+    if msg['role'] == "Agent":
+        st.markdown(f"<b>Agent:</b> {msg['message']}", unsafe_allow_html=True)
+    else:  # User
+        st.markdown(f"<b>User:</b> {msg['message']}", unsafe_allow_html=True)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
