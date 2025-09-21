@@ -29,7 +29,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can BiswaLex help you? 😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
     </div>
     <style>
     @keyframes bounce {
@@ -51,16 +51,7 @@ CUSTOM_RESPONSES = {
     "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
     "father": "My father is Biswajit Mohapatra.",
     "who trained you": "I was trained by Biswajit Mohapatra.",
-    "trained": "I was trained and fine-tuned by Biswajit Mohapatra.",
-    "who built you": "I was built by Biswajit Mohapatra.",
-    "built": "I was built by Biswajit Mohapatra.",
-    "who developed you": "I was developed by Biswajit Mohapatra.",
-    "developed": "I was developed by Biswajit Mohapatra.",
-    "who established you": "I was established by Biswajit Mohapatra.",
-    "established": "I was established by Biswajit Mohapatra.",
-    "made you": "I was made by Biswajit Mohapatra.",
-    "owner": "My owner is Biswajit Mohapatra.",
-    "contribution": "The contribution of Biswajit Mohapatra is creating, developing, training, and establishing me 🚀"
+    "trained": "I was trained and fine-tuned by Biswajit Mohapatra."
 }
 
 def check_custom_response(user_input: str):
@@ -98,7 +89,7 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)
+    time.sleep(1)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -107,29 +98,20 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()
+    placeholder.empty()  # Remove typing indicator
 
-# --- Scrollable chat container ---
-st.markdown("<div id='chat-container' style='height:400px; overflow-y:auto;'>", unsafe_allow_html=True)
-
-# --- Display messages with Markdown and scientific emojis ---
+# --- Display messages with scientific emojis ---
 for msg in st.session_state.current_session:
-    content = msg['message']
     if msg['role'] == "Agent":
-        st.markdown(f"⚛️ **{content}**", unsafe_allow_html=True)
-    else:
-        st.markdown(f"🧑‍🔬 **{content}**", unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# --- Manual Scroll Button ---
-if st.button("⬇️ Scroll to Latest"):
-    st.markdown("""
-        <script>
-        var chatContainer = window.parent.document.querySelector('#chat-container');
-        if(chatContainer){ chatContainer.scrollTop = chatContainer.scrollHeight; }
-        </script>
-    """, unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 {msg['message']}</div>",
+            unsafe_allow_html=True
+        )
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
