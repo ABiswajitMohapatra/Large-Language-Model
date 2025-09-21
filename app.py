@@ -71,7 +71,10 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Chat input ---
-prompt = st.chat_input("Say something...")
+col1, col2 = st.columns([10, 1])
+prompt = col1.chat_input("Say something...")
+upload_button = col2.button("+")
+
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
@@ -89,6 +92,11 @@ if prompt:
         add_message("Agent", answer)
 
     placeholder.empty()  # Remove typing indicator
+
+if upload_button:
+    uploaded_file = st.file_uploader("Choose a file")
+    if uploaded_file:
+        add_message("User", f"Uploaded file: {uploaded_file.name}")
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
