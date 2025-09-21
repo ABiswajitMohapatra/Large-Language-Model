@@ -29,7 +29,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can BiswaLex help with!😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -46,12 +46,21 @@ def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
 CUSTOM_RESPONSES = {
-    "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
+  "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
     "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
     "father": "My father is Biswajit Mohapatra.",
     "who trained you": "I was trained by Biswajit Mohapatra.",
-    "trained": "I was trained and fine-tuned by Biswajit Mohapatra."
+    "trained": "I was trained and fine-tuned by Biswajit Mohapatra.",
+    "who built you": "I was built by Biswajit Mohapatra.",
+    "built": "I was built by Biswajit Mohapatra.",
+    "who developed you": "I was developed by Biswajit Mohapatra.",
+    "developed": "I was developed by Biswajit Mohapatra.",
+    "who established you": "I was established by Biswajit Mohapatra.",
+    "established": "I was established by Biswajit Mohapatra.",
+    "made you": "I was made by Biswajit Mohapatra.",
+    "owner": "My owner is Biswajit Mohapatra.",
+    "contribution": "The contribution of Biswajit Mohapatra is creating, developing, training, and establishing me 🚀"
 }
 
 def check_custom_response(user_input: str):
@@ -117,3 +126,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
