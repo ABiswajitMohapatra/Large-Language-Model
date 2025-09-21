@@ -109,20 +109,23 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with scientific emojis and Markdown ---
+# --- Display messages with scientific emojis and bold ---
 for msg in st.session_state.current_session:
-    content = msg['message']
-
     if msg['role'] == "Agent":
-        st.markdown(f"⚛️ **Agent:** {content}", unsafe_allow_html=True)
-    else:
-        st.markdown(f"🧑‍🔬 **You:** {content}", unsafe_allow_html=True)
-
-
+        st.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{msg['message']}</b></div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>",
+            unsafe_allow_html=True
+        )
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
