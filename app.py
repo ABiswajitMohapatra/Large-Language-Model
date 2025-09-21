@@ -70,32 +70,15 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-
-# st markdown overrides - 
- # --- Chat input + hidden + upload button ---
-col1, col2 = st.columns([8, 1])
-
-with col1:
-    prompt = st.chat_input("Ask anything...")
-
-with col2:
-    uploaded_file = st.file_uploader(
-        label="+",
-        type=["pdf", "png", "jpg", "jpeg"],
-        label_visibility="collapsed"
-    )
- 
-
+# --- Chat input ---
+prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
     # Typing indicator
     placeholder = st.empty()
-    placeholder.markdown(
-        "<p style='color:gray; font-style:italic;'>Agent is typing...</p>",
-        unsafe_allow_html=True
-    )
+    placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
     time.sleep(0.5)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
@@ -126,8 +109,3 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
-
-
-
-
