@@ -29,7 +29,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can BiswaLex help with!😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help with!😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -126,4 +126,5 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
