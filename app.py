@@ -71,46 +71,44 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Chat input ---
-# Chat input with image upload (HTML + CSS only, no logic changed)
 prompt = st.chat_input(
     """
-   <div style="
-  display:flex; align-items:center; justify-content:space-between;
-  width:100%; max-width:100%;
-  background:#ffffff; border:1px solid #e5e7eb; border-radius:28px;
-  box-shadow:0 1px 2px rgba(0,0,0,0.04); padding:10px 12px;
-">
-  <!-- LEFT: circular '+' (upload) -->
-  <label for="file-upload" style="
-    width:34px; height:34px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    border:1px solid #e5e7eb; background:#ffffff; color:#111827;
-    font-weight:600; font-size:20px; cursor:pointer; user-select:none;
-    margin-right:10px;
-  ">+</label>
-  <input id="file-upload" type="file" accept="image/*" style="display:none;" />
-
-  <!-- MIDDLE: placeholder -->
-  <span style="flex:1; color:#9ca3af; font-size:14px; line-height:1;">
-    Ask anything
-  </span>
-
-  <!-- RIGHT: mic + blue badge -->
-  <span style="display:flex; align-items:center; gap:8px; margin-left:10px;">
-    <span style="font-size:18px; color:#111827;">🎤</span>
-    <span style="
-      width:36px; height:36px; border-radius:50%;
-      background:#e6f0ff; display:flex; align-items:center; justify-content:center;
+    <div style="
+      display:flex; align-items:center; justify-content:space-between;
+      width:100%; max-width:100%;
+      background:#ffffff; border:1px solid #e5e7eb; border-radius:28px;
+      box-shadow:0 1px 2px rgba(0,0,0,0.04); padding:10px 12px;
     ">
-      <span style="
-        width:26px; height:26px; border-radius:50%;
-        background:#0a66ff; color:#ffffff; font-weight:700; font-size:12px;
+      <!-- LEFT: circular '+' (upload) -->
+      <label for="file-upload" style="
+        width:34px; height:34px; border-radius:50%;
         display:flex; align-items:center; justify-content:center;
-      ">⏵</span>
-    </span>
-  </span>
-</div>
+        border:1px solid #e5e7eb; background:#ffffff; color:#111827;
+        font-weight:600; font-size:20px; cursor:pointer; user-select:none;
+        margin-right:10px;
+      ">+</label>
+      <input id="file-upload" type="file" accept="image/*" style="display:none;" />
 
+      <!-- MIDDLE: placeholder -->
+      <span style="flex:1; color:#9ca3af; font-size:14px; line-height:1;">
+        Ask anything
+      </span>
+
+      <!-- RIGHT: mic + blue badge -->
+      <span style="display:flex; align-items:center; gap:8px; margin-left:10px;">
+        <span style="font-size:18px; color:#111827;">🎤</span>
+        <span style="
+          width:36px; height:36px; border-radius:50%;
+          background:#e6f0ff; display:flex; align-items:center; justify-content:center;
+        ">
+          <span style="
+            width:26px; height:26px; border-radius:50%;
+            background:#0a66ff; color:#ffffff; font-weight:700; font-size:12px;
+            display:flex; align-items:center; justify-content:center;
+          ">⏵</span>
+        </span>
+      </span>
+    </div>
     """,
     unsafe_allow_html=True
 )
@@ -136,8 +134,6 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
- 
-
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
@@ -157,8 +153,3 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
-
-
-
-
