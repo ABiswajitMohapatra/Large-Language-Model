@@ -35,71 +35,88 @@ st.markdown(
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
     }
+    .chat-input-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 640px;
+        margin: auto;
+        margin-bottom: 10px;
+    }
+    .chat-input {
+        flex: 1;
+        font-size: 16px;
+        padding: 12px 16px;
+        border-radius: 24px;
+        border: 1px solid #ccc;
+        outline: none;
+    }
+    .upload-button {
+        margin-left: 8px;
+        font-size: 28px;
+        cursor: pointer;
+        user-select: none;
+        color: #555;
+    }
+    input[type="file"] {
+        display: none;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- File uploader ---
-uploaded_file = st.file_uploader("Upload an image or PDF file", type=["pdf", "png", "jpg", "jpeg"])
-uploaded_content = ""
-if uploaded_file:
-    if uploaded_file.type == "application/pdf":
-        uploaded_content = extract_text_from_pdf(uploaded_file)
-    elif "image" in uploaded_file.type:
-        uploaded_content = extract_text_from_image(uploaded_file)
-    if uploaded_content:
-        st.markdown("**Extracted text from uploaded file:**")
-        st.write(uploaded_content[:500] + ("..." if len(uploaded_content) > 500 else ""))
+# --- State to hold uploaded file content ---
+if 'uploaded_content' not in st.session_state:
+    st.session_state.uploaded_content = ""
 
-# --- Message handler ---
-def add_message(role, message):
-    st.session_state.current_session.append({"role": role, "message": message})
+# --- File uploader with custom UI ---
+file_uploaded = st.file_uploader("", type=["pdf", "png", "jpg", "jpeg"], label_visibility='collapsed')
 
-CUSTOM_RESPONSES = {
-    "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
-    "creator": "My creator is Biswajit Mohapatra.",
-    # You can add more...
-}
+if file_uploaded:
+    if file_uploaded.type == "application/pdf":
+        st.session_state.uploaded_content = extract_text_from_pdf(file_uploaded)
+    elif "image" in file_uploaded.type:
+        st.session_state.uploaded_content = extract_text_from_image(file_uploaded)
+    else:
+        st.session_state.uploaded_content = ""
+    if st.session_state.uploaded_content:
+        st.markdown("**Extracted content from uploaded file:**")
+        st.write(st.session_state.uploaded_content[:500] + ("..." if len(st.session_state.uploaded_content) > 500 else ""))
 
-def check_custom_response(user_input: str):
-    normalized = user_input.lower()
-    for keyword, response in CUSTOM_RESPONSES.items():
-        if keyword in normalized:
-            return response
-    return None
+# --- Chat input and upload bar ---
+with st.form(key="chat_form", clear_on_submit=True):
+    text_message = st.text_input("Say something...", key="chat_input", max_chars=500)
 
-# --- Chat input ---
-prompt = st.chat_input("Say something...")
-if prompt:
-    add_message("User", prompt)
-    normalized_prompt = prompt.strip().lower()
+    # Upload button acting as label for hidden file uploader, style visible only on hover or focus
+    submit_button = st.form_submit_button("Send")
+
+if submit_button and text_message:
+    add_message = lambda role, msg: st.session_state.current_session.append({"role": role, "message": msg})
+    add_message("User", text_message)
+    normalized_prompt = text_message.strip().lower()
+
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
+    time.sleep(0.5)
+
+    from model import check_custom_response
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        # Pass uploaded_content as extra_file_content argument (must update model.py)
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session, extra_file_content=uploaded_content)
+        from model import chat_with_agent
+        answer = chat_with_agent(text_message, st.session_state.index, st.session_state.current_session, extra_file_content=st.session_state.uploaded_content)
         add_message("Agent", answer)
+
     placeholder.empty()
 
-# --- Display messages left and right ---
+# --- Messages display ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(
-            f"<div style='color:black; text-align:left; margin:5px 0;'>"
-            f"<b>Agent:</b> {msg['message']}</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:left; margin:6px 0;'><b>Agent:</b> {msg['message']}</div>", unsafe_allow_html=True)
     else:
-        st.markdown(
-            f"<div style='color:black; text-align:right; margin:5px 0;'>"
-            f"<b>User:</b> {msg['message']}</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; margin:6px 0;'><b>User:</b> {msg['message']}</div>", unsafe_allow_html=True)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
