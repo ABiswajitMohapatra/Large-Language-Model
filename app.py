@@ -2,27 +2,7 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
 
-# --- Page Configuration ---
 st.set_page_config(page_title="BiswaLex", page_icon="🧑‍💻", layout="wide")
-
-# --- Custom CSS ---
-st.markdown(
-    """
-    <style>
-    .stTextInput > div > div > input {
-        border-radius: 20px;
-    }
-    .stButton button {
-        border-radius: 20px;
-        padding: 0.5rem 1rem;
-    }
-    div[data-testid="stFileUploader"] {
-        width: 100%;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -65,7 +45,6 @@ st.markdown(
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
-# --- Custom responses dictionary ---
 CUSTOM_RESPONSES = {
     "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
@@ -91,24 +70,8 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Chat input with upload icon ---
-col1, col2 = st.columns([6, 1])
-
-with col1:
-    prompt = st.text_input(
-        "Say something...",
-        key="chat_input",
-        placeholder="Type your message here...",
-        label_visibility="collapsed",
-        icon=":material_send:"  # Corrected icon syntax
-    )
-
-with col2:
-    uploaded_file = st.file_uploader(
-        "Upload file",
-        label_visibility="collapsed"
-    )
-
+# --- Chat input ---
+prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
@@ -116,7 +79,7 @@ if prompt:
     # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)
+    time.sleep(0.5)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -125,50 +88,24 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()
+    placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with enhanced styling ---
+# --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
-    if msg["role"] == "Agent":
+    if msg['role'] == "Agent":
         st.markdown(
-            f"""
-            <div style='display: flex; align-items: start; margin: 5px 0;'>
-                <div style='background-color: #f0f2f6; padding: 10px; border-radius: 10px; max-width: 80%;'>
-                    <b>Agent:</b> {msg["message"]}
-                </div>
-            </div>
-            """,
+            f"<div style='color:black; text-align:left; margin:5px 0;'>"
+            f"<b>Agent:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
     else:  # User
         st.markdown(
-            f"""
-            <div style='display: flex; justify-content: flex-end; margin: 5px 0;'>
-                <div style='background-color: #e6f3ff; padding: 10px; border-radius: 10px; max-width: 80%;'>
-                    <b>You:</b> {msg["message"]}
-                </div>
-            </div>
-            """,
+            f"<div style='color:black; text-align:right; margin:5px 0;'>"
+            f"<b>User:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
 
-# --- Save session button ---
-with st.sidebar:
-    if st.button(
-        "Save Session",
-        type="primary",
-        help="Save current chat session"
-    ):
-        if st.session_state.current_session and st.session_state.current_session not in st.session_state.sessions:
-            st.session_state.sessions.append(st.session_state.current_session.copy())
-            st.success("Session saved successfully!")
-
-# --- Footer ---
-st.markdown(
-    """
-    <div style='position: fixed; bottom: 0; left: 0; right: 0; background-color: #f0f2f6; padding: 10px; text-align: center;'>
-        <p style='margin: 0; font-size: 12px;'>Powered by BiswaLex AI © 2024</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# --- Save session ---
+if st.sidebar.button("Save Session"):
+    if st.session_state.current_session not in st.session_state.sessions:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
