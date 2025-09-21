@@ -2,7 +2,7 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
 
-st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
+st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -117,3 +117,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
