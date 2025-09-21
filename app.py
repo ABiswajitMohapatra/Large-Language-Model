@@ -4,24 +4,46 @@ import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
-# --- Initialize index and sessions ---
+# --- Initialize index, sessions, and theme ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
 if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'light'  # default theme is white/light
 
 # --- Sidebar ---
-st.sidebar.title("Chats")
+st.sidebar.title("Settings")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
 
+# Theme toggle
+theme_choice = st.sidebar.radio("Select Theme", ["Light 🌞", "Dark 🌙"])
+st.session_state.theme = 'dark' if theme_choice == "Dark 🌙" else 'light'
+
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
+
+# --- Theme CSS ---
+if st.session_state.theme == 'dark':
+    st.markdown("""
+        <style>
+        body {background-color: #1E1E1E; color: #F5F5F5;}
+        .stMarkdown div {color: #F5F5F5;}
+        </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+        <style>
+        body {background-color: #FFFFFF; color: #000000;}
+        .stMarkdown div {color: #000000;}
+        </style>
+    """, unsafe_allow_html=True)
 
 # --- Logo with animation and welcome text ---
 st.markdown(
@@ -67,7 +89,7 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # --- Typing indicator with backward arrow animation ---
+    # --- Typing indicator ---
     placeholder = st.empty()
     placeholder.markdown(
         """
@@ -89,7 +111,7 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)  # simulate typing
+    time.sleep(1)
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -98,18 +120,20 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
 
-# --- Display messages with scientific emojis ---
+# --- Display messages with scientific emojis and theme support ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
+        color = "#F5F5F5" if st.session_state.theme == 'dark' else "#000000"
         st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ {msg['message']}</div>",
+            f"<div style='text-align:left; margin:5px 0; color:{color}'>⚛️ {msg['message']}</div>",
             unsafe_allow_html=True
         )
-    else:  # User
+    else:
+        color = "#F5F5F5" if st.session_state.theme == 'dark' else "#000000"
         st.markdown(
-            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 {msg['message']}</div>",
+            f"<div style='text-align:right; margin:5px 0; color:{color}'>🧑‍🔬 {msg['message']}</div>",
             unsafe_allow_html=True
         )
 
