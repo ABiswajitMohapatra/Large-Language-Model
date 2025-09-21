@@ -108,26 +108,28 @@ if prompt:
         add_message("Agent", answer)
 
     placeholder.empty()  # Remove typing indicator
-
-# --- Display messages with scientific emojis, bold, and Markdown ---
+# --- Display messages with emojis, bold, Markdown, and code formatting ---
 for msg in st.session_state.current_session:
     content = msg['message']
+
+    # Wrap content in <pre> for code blocks inside HTML
+    content_with_code = content.replace("```", "<pre style='background-color:#f0f0f0; padding:5px; border-radius:5px;'>").replace("```", "</pre>")
+
     if msg['role'] == "Agent":
         st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content_with_code}</b></div>",
             unsafe_allow_html=True
         )
-        st.markdown(content, unsafe_allow_html=True)  # Markdown support
     else:  # User
         st.markdown(
-            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content_with_code}</b></div>",
             unsafe_allow_html=True
         )
-        st.markdown(content, unsafe_allow_html=True)  # Markdown support
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
