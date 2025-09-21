@@ -29,7 +29,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help with! 😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help you! 😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -46,21 +46,21 @@ def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
 CUSTOM_RESPONSES = {
-  "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
-  "creator": "My creator is Biswajit Mohapatra.",
-  "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
-  "father": "My father is Biswajit Mohapatra.",
-  "who trained you": "I was trained by Biswajit Mohapatra.",
-  "trained": "I was trained and fine-tuned by Biswajit Mohapatra.",
-  "who built you": "I was built by Biswajit Mohapatra.",
-  "built": "I was built by Biswajit Mohapatra.",
-  "who developed you": "I was developed by Biswajit Mohapatra.",
-  "developed": "I was developed by Biswajit Mohapatra.",
-  "who established you": "I was established by Biswajit Mohapatra.",
-  "established": "I was established by Biswajit Mohapatra.",
-  "made you": "I was made by Biswajit Mohapatra.",
-  "owner": "My owner is Biswajit Mohapatra.",
-  "contribution": "The contribution of Biswajit Mohapatra is creating, developing, training, and establishing me 🚀"
+    "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
+    "creator": "My creator is Biswajit Mohapatra.",
+    "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
+    "father": "My father is Biswajit Mohapatra.",
+    "who trained you": "I was trained by Biswajit Mohapatra.",
+    "trained": "I was trained and fine-tuned by Biswajit Mohapatra.",
+    "who built you": "I was built by Biswajit Mohapatra.",
+    "built": "I was built by Biswajit Mohapatra.",
+    "who developed you": "I was developed by Biswajit Mohapatra.",
+    "developed": "I was developed by Biswajit Mohapatra.",
+    "who established you": "I was established by Biswajit Mohapatra.",
+    "established": "I was established by Biswajit Mohapatra.",
+    "made you": "I was made by Biswajit Mohapatra.",
+    "owner": "My owner is Biswajit Mohapatra.",
+    "contribution": "The contribution of Biswajit Mohapatra is creating, developing, training, and establishing me 🚀"
 }
 
 def check_custom_response(user_input: str):
@@ -109,50 +109,29 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Chat container style ---
-st.markdown(
-    """
-    <style>
-    .chat-container {
-        height: 500px;  /* fixed height */
-        overflow-y: auto;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 10px;
-        background-color: var(--background-color, #ffffff);
-    }
-    .chat-message { margin: 5px 0; }
-    .agent-msg { text-align: left; }
-    .user-msg { text-align: right; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# --- Manual scroll to latest ---
+scroll_to_latest = st.button("⬇️ Scroll to Latest")
+chat_placeholder = st.empty()
 
-# --- Display messages ---
-chat_html = "<div class='chat-container'>"
-for msg in st.session_state.current_session:
-    content = msg['message']
-    if msg['role'] == "Agent":
-        chat_html += f"<div class='chat-message agent-msg'>⚛️ <b>{content}</b></div>"
-        chat_html += f"<div class='chat-message agent-msg'>{content}</div>"  # Markdown support
-    else:
-        chat_html += f"<div class='chat-message user-msg'>🧑‍🔬 <b>{content}</b></div>"
-        chat_html += f"<div class='chat-message user-msg'>{content}</div>"  # Markdown support
-chat_html += "</div>"
+def render_chat():
+    chat_html = "<div style='height:500px; overflow-y:auto; padding:10px; border:1px solid #ccc; border-radius:10px;'>"
+    for msg in st.session_state.current_session:
+        content = msg['message']
+        if msg['role'] == "Agent":
+            chat_html += f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>"
+            chat_html += f"<div style='text-align:left; margin:5px 0;'>{content}</div>"
+        else:
+            chat_html += f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>"
+            chat_html += f"<div style='text-align:right; margin:5px 0;'>{content}</div>"
+    chat_html += "</div>"
+    chat_placeholder.markdown(chat_html, unsafe_allow_html=True)
 
-st.markdown(chat_html, unsafe_allow_html=True)
-
-# --- Manual scroll button ---
-if st.button("⬇️ Scroll to Latest"):
-    st.markdown(
-        """
-        <script>
-        const container = window.parent.document.querySelector('.chat-container');
-        if (container) { container.scrollTop = container.scrollHeight; }
-        </script>
-        """,
-        unsafe_allow_html=True
+if scroll_to_latest:
+    render_chat()
+else:
+    chat_placeholder.markdown(
+        "<div style='height:500px; overflow-y:auto; padding:10px; border:1px solid #ccc; border-radius:10px;'>"
+        "Scroll to latest messages ⬇️</div>", unsafe_allow_html=True
     )
 
 # --- Save session ---
