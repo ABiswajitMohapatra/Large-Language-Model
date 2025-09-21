@@ -92,12 +92,18 @@ if prompt:
 
 # --- Display messages with Streamlit Chat UI ---
 for msg in st.session_state.current_session:
-    role = "user" if msg["role"] == "User" else "assistant"
-    avatar = "🧑‍💻" if msg["role"] == "User" else "🤖"
+    if msg["role"] == "User":
+        role = "user"  # user messages aligned right
+        avatar = "🧑‍💻"
+    else:
+        role = "assistant"  # agent messages aligned left
+        avatar = "🤖"
     with st.chat_message(role, avatar=avatar):
         st.markdown(msg["message"])
+
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
