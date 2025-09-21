@@ -111,6 +111,8 @@ if prompt:
     # --- End of typing indicator ---
 
 # --- Display messages with left-right alignment ---
+chat_container_id = "chat-container"
+st.markdown(f"<div id='{chat_container_id}' style='max-height:500px; overflow-y:auto;'>", unsafe_allow_html=True)
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
@@ -124,6 +126,19 @@ for msg in st.session_state.current_session:
             f"<b>User:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
+st.markdown("</div>", unsafe_allow_html=True)
+
+# --- Scroll down arrow (manual click) ---
+st.markdown(
+    f"""
+    <div style='text-align:center; margin-top:5px;'>
+        <a href="javascript:document.getElementById('{chat_container_id}').scrollTop=document.getElementById('{chat_container_id}').scrollHeight;">
+            <span style='font-size:24px; cursor:pointer;'>&#x25BC;</span>
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
