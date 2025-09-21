@@ -109,12 +109,12 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages without bubbles / styling ---
+# --- Display messages with left/right alignment (plain) ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<b>Agent:</b> {msg['message']}", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:left;'><b>Agent:</b> {msg['message']}</div>", unsafe_allow_html=True)
     else:  # User
-        st.markdown(f"<b>User:</b> {msg['message']}", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:right;'><b>User:</b> {msg['message']}</div>", unsafe_allow_html=True)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
