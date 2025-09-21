@@ -78,8 +78,6 @@ run_chat_input(
     add_message,
     check_custom_response,
     chat_with_agent,
-    placeholder_text="Say something...",
-    typing_delay=0.5,     # same as your previous sleep
 )
 
 
@@ -124,5 +122,6 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
