@@ -70,8 +70,22 @@ def check_custom_response(user_input: str):
             return response
     return None
 
+
 # --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Chat input + hidden + upload button ---
+col1, col2 = st.columns([8, 1])
+
+with col1:
+    prompt = st.chat_input("Ask anything...")
+
+with col2:
+    uploaded_file = st.file_uploader(
+        label="+",
+        type=["pdf", "png", "jpg", "jpeg"],
+        label_visibility="collapsed"
+    )
+    st.markdown("⬆️", unsafe_allow_html=True)  # simple upload icon
+
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
