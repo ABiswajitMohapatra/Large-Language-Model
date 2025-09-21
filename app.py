@@ -71,13 +71,9 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Chat input ---
-# --- Chat input + compact image icon (no CSS) ---
-col1, col2 = st.columns([8, 1])
-
-with col1:
-    prompt = st.chat_input("Ask anything...")
 
 
+prompt = st.chat_input("Ask anything...")
 
 if prompt:
     add_message("User", prompt)
@@ -116,5 +112,6 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
