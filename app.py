@@ -29,7 +29,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>Welcome to BiswaLex AI Chat!</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -100,20 +100,22 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with scientific emojis ---
+# --- Display messages with scientific emojis and bold ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ {msg['message']}</div>",
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{msg['message']}</b></div>",
             unsafe_allow_html=True
         )
     else:  # User
         st.markdown(
-            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 {msg['message']}</div>",
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>",
             unsafe_allow_html=True
         )
+
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
