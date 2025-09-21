@@ -70,6 +70,86 @@ def check_custom_response(user_input: str):
             return response
     return None
 
+
+# st markdown overrides - 
+# --- Chat input CSS overrides (add this BEFORE st.chat_input) ---
+st.markdown("""
+<style>
+:root{
+  --bar-width: min(860px, 94vw);
+  --bar-bottom: 14px;
+}
+
+/* keep space so fixed bar doesn't overlap content */
+.main .block-container{ padding-bottom: 110px !important; }
+
+/* pin the chat input to bottom & style it */
+[data-testid="stChatInput"]{
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: var(--bar-bottom) !important;
+  width: var(--bar-width) !important;
+  z-index: 9998 !important;
+}
+
+/* rounded white bar look */
+[data-testid="stChatInput"] textarea,
+[data-testid="stChatInput"] input{
+  background:#ffffff !important;
+  color:#111827 !important;
+  border:1px solid #e5e7eb !important;
+  border-radius:28px !important;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04) !important;
+  padding:12px 16px !important;
+  /* extra padding so pseudo-icons don't overlap text */
+  padding-left: 56px !important;
+  padding-right: 64px !important;
+}
+[data-testid="stChatInput"] ::placeholder{ color:#9ca3af !important; }
+[data-testid="stChatInput"] :is(textarea,input):focus{
+  outline:none !important; box-shadow:none !important;
+}
+
+/* draw a small '+' circle on the LEFT (visual only) */
+[data-testid="stChatInput"]::before{
+  content: "+";
+  position: absolute;
+  left: 12px; bottom: 50%;
+  transform: translateY(50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  display:flex; align-items:center; justify-content:center;
+  background:#ffffff; color:#111827;
+  border:1px solid #e5e7eb;
+  font-weight:600; font-size:20px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  pointer-events: none; /* purely visual */
+}
+
+/* draw a blue action badge on the RIGHT (visual only) */
+[data-testid="stChatInput"]::after{
+  content: "⏵";
+  position: absolute;
+  right: 16px; bottom: 50%;
+  transform: translateY(50%);
+  width: 36px; height: 36px; border-radius:50%;
+  background:#e6f0ff; color:#ffffff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: none;
+  font-weight:700; font-size:12px;
+}
+[data-testid="stChatInput"]::after{
+  /* inner blue circle via shadow trick */
+  box-shadow: inset 0 0 0 10px #0a66ff;
+  color: transparent; /* hide ⏵ text color in outer circle */
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+
+
+
 # --- Chat input ---
 prompt = st.chat_input("Ask anthing...")
 
@@ -113,5 +193,6 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
