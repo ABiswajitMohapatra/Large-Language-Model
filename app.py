@@ -51,16 +51,7 @@ CUSTOM_RESPONSES = {
     "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
     "father": "My father is Biswajit Mohapatra.",
     "who trained you": "I was trained by Biswajit Mohapatra.",
-    "trained": "I was trained and fine-tuned by Biswajit Mohapatra.",
-    "who built you": "I was built by Biswajit Mohapatra.",
-    "built": "I was built by Biswajit Mohapatra.",
-    "who developed you": "I was developed by Biswajit Mohapatra.",
-    "developed": "I was developed by Biswajit Mohapatra.",
-    "who established you": "I was established by Biswajit Mohapatra.",
-    "established": "I was established by Biswajit Mohapatra.",
-    "made you": "I was made by Biswajit Mohapatra.",
-    "owner": "My owner is Biswajit Mohapatra.",
-    "contribution": "The contribution of Biswajit Mohapatra is creating, developing, training, and establishing me 🚀"
+    "trained": "I was trained and fine-tuned by Biswajit Mohapatra."
 }
 
 def check_custom_response(user_input: str):
@@ -109,12 +100,30 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with left/right alignment (plain) ---
+# --- Display messages with avatars ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left;'><b>Agent:</b> {msg['message']}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div style='display:flex; align-items:center; margin:5px 0;'>
+                <div style='width:30px; height:30px; background-color:#888; border-radius:50%; 
+                            color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-right:10px;'>A</div>
+                <div>{msg['message']}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     else:  # User
-        st.markdown(f"<div style='text-align:right;'><b>User:</b> {msg['message']}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div style='display:flex; align-items:center; justify-content:flex-end; margin:5px 0;'>
+                <div style='margin-right:10px;'>{msg['message']}</div>
+                <div style='width:30px; height:30px; background-color:#1E90FF; border-radius:50%; 
+                            color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;'>U</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
