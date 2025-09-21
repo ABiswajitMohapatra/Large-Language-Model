@@ -81,28 +81,6 @@ run_chat_input(
 )
 
 
-'''
-prompt = st.chat_input("Say something...")
-if prompt:
-    add_message("User", prompt)
-    normalized_prompt = prompt.strip().lower()
-
-    # Typing indicator
-    placeholder = st.empty()
-    placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
-
-    custom_answer = check_custom_response(normalized_prompt)
-    if custom_answer:
-        add_message("Agent", custom_answer)
-    else:
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", answer)
-
-    placeholder.empty()  # Remove typing indicator
-'''
-
-
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
@@ -122,6 +100,7 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
