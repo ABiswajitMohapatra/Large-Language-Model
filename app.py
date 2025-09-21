@@ -1,20 +1,16 @@
 import streamlit as st
-import time
 import json
 import firebase_admin
 from firebase_admin import credentials, firestore
-from model import load_documents, create_or_load_index, chat_with_agent
 
-st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
-
-# --- Initialize Firebase ---
+# --- Initialize Firebase only once ---
 if not firebase_admin._apps:
-    cred_dict = json.loads(st.secrets["FIREBASE_JSON"])
+    # Convert the string from secrets into a Python dictionary
+    cred_dict = json.loads(st.secrets["FIREBASE"])
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
 # --- Load sessions from Firebase ---
 def load_sessions_from_firebase():
     sessions = []
@@ -139,4 +135,5 @@ if st.sidebar.button("Save Session"):
     save_session_to_firebase()
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
