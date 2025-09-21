@@ -55,25 +55,22 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
-# RAG Integration: New retrieval function
-# This function should be updated with actual retrieval logic
-# For now, it returns empty or static list as demonstration
-
 def rag_retrieve(query: str) -> list[str]:
-    # Placeholder for current/private data retrieval
-    results = []
-    # Add your current or private data fetching logic here
-    return results
+    # Optionally implement RAG if needed
+    return []
 
-# Updated chat_with_agent with RAG context injection
-
-def chat_with_agent(query, index, chat_history, memory_limit=12):
+def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
 
+    if extra_file_content:
+        context += f"\nAdditional context from uploaded file:\n{extra_file_content}"
+
     rag_results = rag_retrieve(query)
     rag_context = "\n".join(rag_results)
+
+    full_context = context + "\n" + rag_context if rag_context else context
 
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
@@ -88,14 +85,12 @@ def chat_with_agent(query, index, chat_history, memory_limit=12):
     conversation_text += f"User: {query}\n"
 
     prompt = (
-        f"Context from documents: {context}\n"
-        f"Context from current/private data: {rag_context}\n"
+        f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
         "Answer the user's last query in context."
     )
     return query_groq_api(prompt)
 
-# --- PDF & Image Extraction ---
 def extract_text_from_pdf(file):
     reader = PyPDF2.PdfReader(file)
     text = ""
