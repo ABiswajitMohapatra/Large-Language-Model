@@ -72,7 +72,6 @@ def check_custom_response(user_input: str):
 
 
 # st markdown overrides - 
-# --- Chat input CSS overrides (add this BEFORE st.chat_input) ---
 st.markdown("""
 <style>
 :root{
@@ -80,10 +79,10 @@ st.markdown("""
   --bar-bottom: 14px;
 }
 
-/* keep space so fixed bar doesn't overlap content */
+/* give space so the fixed bar doesn't cover content; remove if not sticky */
 .main .block-container{ padding-bottom: 110px !important; }
 
-/* pin the chat input to bottom & style it */
+/* pin & size the chat input (optional – comment these 5 lines if you don't want sticky) */
 [data-testid="stChatInput"]{
   position: fixed !important;
   left: 50% !important;
@@ -93,55 +92,84 @@ st.markdown("""
   z-index: 9998 !important;
 }
 
-/* rounded white bar look */
+/* ----- make the container a proper anchor for pseudo-elements ----- */
+[data-testid="stChatInput"]{
+  position: relative !important;         /* <— IMPORTANT so ::before/::after show */
+  border-radius: 28px !important;
+}
 [data-testid="stChatInput"] textarea,
 [data-testid="stChatInput"] input{
   background:#ffffff !important;
   color:#111827 !important;
   border:1px solid #e5e7eb !important;
-  border-radius:28px !important;
-  box-shadow:0 1px 2px rgba(0,0,0,0.04) !important;
-  padding:12px 16px !important;
-  /* extra padding so pseudo-icons don't overlap text */
+  border-radius: 28px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+  padding: 12px 16px !important;
+
+  /* leave room for the + (left), mic + badge (right) */
   padding-left: 56px !important;
-  padding-right: 64px !important;
+  padding-right: 92px !important;
 }
 [data-testid="stChatInput"] ::placeholder{ color:#9ca3af !important; }
 [data-testid="stChatInput"] :is(textarea,input):focus{
-  outline:none !important; box-shadow:none !important;
+  outline: none !important;
+  box-shadow: none !important;           /* remove blue glow */
 }
 
-/* draw a small '+' circle on the LEFT (visual only) */
+/* ----- LEFT: + upload (visual) ----- */
 [data-testid="stChatInput"]::before{
   content: "+";
   position: absolute;
-  left: 12px; bottom: 50%;
-  transform: translateY(50%);
-  width: 34px; height: 34px; border-radius: 50%;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px; height: 36px;
+  border-radius: 50%;
   display:flex; align-items:center; justify-content:center;
-  background:#ffffff; color:#111827;
+  background:#fff; color:#111827;
   border:1px solid #e5e7eb;
-  font-weight:600; font-size:20px;
-  box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  font-weight: 600; font-size: 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
   pointer-events: none; /* purely visual */
 }
 
-/* draw a blue action badge on the RIGHT (visual only) */
-[data-testid="stChatInput"]::after{
-  content: "⏵";
+/* ----- RIGHT: mic (visual) ----- */
+[data-testid="stChatInput"] .mic-decor{
   position: absolute;
-  right: 16px; bottom: 50%;
-  transform: translateY(50%);
-  width: 36px; height: 36px; border-radius:50%;
-  background:#e6f0ff; color:#ffffff;
+  right: 60px;                           /* sits between text and blue badge */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px; color:#111827;
+  pointer-events: none;
+}
+
+/* inject the mic span */
+[data-testid="stChatInput"]::marker{ content: ""; } /* silence some browsers */
+</style>
+""", unsafe_allow_html=True)
+
+# tiny injection to render the mic glyph (no HTML in chat_input itself)
+st.markdown(
+    "<span class='mic-decor'>🎤</span>",
+    unsafe_allow_html=True
+)
+
+# SECOND CSS block for the blue badge (kept separate to avoid minification quirks)
+st.markdown("""
+<style>
+/* ----- RIGHT: blue action badge (visual) ----- */
+[data-testid="stChatInput"]::after{
+  content: "";
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #e6f0ff;
   display:flex; align-items:center; justify-content:center;
-  box-shadow: none;
-  font-weight:700; font-size:12px;
 }
 [data-testid="stChatInput"]::after{
-  /* inner blue circle via shadow trick */
+  /* inner blue circle via inset shadow */
   box-shadow: inset 0 0 0 10px #0a66ff;
-  color: transparent; /* hide ⏵ text color in outer circle */
 }
 </style>
 """, unsafe_allow_html=True)
@@ -193,6 +221,7 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
