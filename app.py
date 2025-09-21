@@ -71,6 +71,20 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Chat input ---
+
+from chat_input_plus import run_chat_input
+
+run_chat_input(
+    add_message,
+    check_custom_response,
+    chat_with_agent,
+    placeholder_text="Say something...",
+    typing_delay=0.5,     # same as your previous sleep
+    show_attached_note=True
+)
+
+
+'''
 prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
@@ -89,6 +103,8 @@ if prompt:
         add_message("Agent", answer)
 
     placeholder.empty()  # Remove typing indicator
+'''
+
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
@@ -109,3 +125,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
