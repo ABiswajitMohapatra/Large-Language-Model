@@ -3,24 +3,12 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 if not firebase_admin._apps:
-    cred_dict = {
-        "type": st.secrets["FIREBASE"]["type"],
-        "project_id": st.secrets["FIREBASE"]["project_id"],
-        "private_key_id": st.secrets["FIREBASE"]["private_key_id"],
-        "private_key": st.secrets["FIREBASE"]["private_key"].replace("\\n", "\n"),
-        "client_email": st.secrets["FIREBASE"]["client_email"],
-        "client_id": st.secrets["FIREBASE"]["client_id"],
-        "auth_uri": st.secrets["FIREBASE"]["auth_uri"],
-        "token_uri": st.secrets["FIREBASE"]["token_uri"],
-        "auth_provider_x509_cert_url": st.secrets["FIREBASE"]["auth_provider_x509_cert_url"],
-        "client_x509_cert_url": st.secrets["FIREBASE"]["client_x509_cert_url"]
-    }
+    cred_dict = dict(st.secrets["FIREBASE"])  # Already a dict
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
-
 
 # --- Load sessions from Firebase ---
 def load_sessions_from_firebase():
@@ -146,6 +134,7 @@ if st.sidebar.button("Save Session"):
     save_session_to_firebase()
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
