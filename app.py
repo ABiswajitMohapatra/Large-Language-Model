@@ -9,7 +9,7 @@ st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
 # --- Initialize Firebase ---
 if not firebase_admin._apps:
-    cred_dict = json.loads(st.secrets["FIREBASE"])
+    cred_dict = json.loads(st.secrets["FIREBASE_JSON"])
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
@@ -139,3 +139,4 @@ if st.sidebar.button("Save Session"):
     save_session_to_firebase()
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
