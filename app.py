@@ -29,7 +29,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help with! 😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can BiswaLex help you? 😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -98,7 +98,7 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)  # simulate typing
+    time.sleep(1)
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -107,23 +107,29 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
 
-# --- Display messages with scientific emojis, bold, and Markdown ---
+# --- Scrollable chat container ---
+st.markdown("<div id='chat-container' style='height:400px; overflow-y:auto;'>", unsafe_allow_html=True)
+
+# --- Display messages with Markdown and scientific emojis ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
-        st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
-            unsafe_allow_html=True
-        )
-        st.markdown(content, unsafe_allow_html=True)  # Markdown support
-    else:  # User
-        st.markdown(
-            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
-            unsafe_allow_html=True
-        )
-        st.markdown(content, unsafe_allow_html=True)  # Markdown support
+        st.markdown(f"⚛️ **{content}**", unsafe_allow_html=True)
+    else:
+        st.markdown(f"🧑‍🔬 **{content}**", unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# --- Manual Scroll Button ---
+if st.button("⬇️ Scroll to Latest"):
+    st.markdown("""
+        <script>
+        var chatContainer = window.parent.document.querySelector('#chat-container');
+        if(chatContainer){ chatContainer.scrollTop = chatContainer.scrollHeight; }
+        </script>
+    """, unsafe_allow_html=True)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
