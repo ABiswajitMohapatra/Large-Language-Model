@@ -45,6 +45,7 @@ st.markdown(
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
+# --- Custom responses ---
 CUSTOM_RESPONSES = {
     "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
@@ -70,8 +71,17 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Chat input (like GPT interface with + icon) ---
+col1, col2 = st.columns([8,1])
+with col1:
+    prompt = st.chat_input("Say something...")
+with col2:
+    uploaded_file = st.file_uploader(
+        "", key="file", type=["pdf", "png", "jpg", "jpeg"],
+        label_visibility="collapsed"
+    )
+
+# --- Handle chat logic ---
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
@@ -79,7 +89,7 @@ if prompt:
     # Typing indicator
     placeholder = st.empty()
     placeholder.markdown("<p style='color:gray; font-style:italic;'>Agent is typing...</p>", unsafe_allow_html=True)
-    time.sleep(0.5)  # simulate typing
+    time.sleep(0.5)
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -88,7 +98,7 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
 
 # --- Display messages with left-right alignment ---
 for msg in st.session_state.current_session:
@@ -98,7 +108,7 @@ for msg in st.session_state.current_session:
             f"<b>Agent:</b> {msg['message']}</div>",
             unsafe_allow_html=True
         )
-    else:  # User
+    else:
         st.markdown(
             f"<div style='color:black; text-align:right; margin:5px 0;'>"
             f"<b>User:</b> {msg['message']}</div>",
