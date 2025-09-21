@@ -29,7 +29,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help you! 😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help with! 😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -109,30 +109,21 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Manual scroll to latest ---
-scroll_to_latest = st.button("⬇️ Scroll to Latest")
-chat_placeholder = st.empty()
-
-def render_chat():
-    chat_html = "<div style='height:500px; overflow-y:auto; padding:10px; border:1px solid #ccc; border-radius:10px;'>"
-    for msg in st.session_state.current_session:
-        content = msg['message']
-        if msg['role'] == "Agent":
-            chat_html += f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>"
-            chat_html += f"<div style='text-align:left; margin:5px 0;'>{content}</div>"
-        else:
-            chat_html += f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>"
-            chat_html += f"<div style='text-align:right; margin:5px 0;'>{content}</div>"
-    chat_html += "</div>"
-    chat_placeholder.markdown(chat_html, unsafe_allow_html=True)
-
-if scroll_to_latest:
-    render_chat()
-else:
-    chat_placeholder.markdown(
-        "<div style='height:500px; overflow-y:auto; padding:10px; border:1px solid #ccc; border-radius:10px;'>"
-        "Scroll to latest messages ⬇️</div>", unsafe_allow_html=True
-    )
+# --- Display messages with scientific emojis, bold, and Markdown ---
+for msg in st.session_state.current_session:
+    content = msg['message']
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(content, unsafe_allow_html=True)  # Markdown support
+    else:  # User
+        st.markdown(
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(content, unsafe_allow_html=True)  # Markdown support
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
