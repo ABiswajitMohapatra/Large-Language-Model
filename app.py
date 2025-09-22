@@ -13,10 +13,23 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
+# GPT circular logo
+st.sidebar.markdown(
+    """
+    <div style='text-align:center; margin-bottom:10px;'>
+        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/gpt.jpg'
+             style='width:70px; height:70px; border-radius:50%; display:block; margin-left:auto; margin-right:auto;'>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# BiswaLex logo
 st.sidebar.image(
     "https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg",
     use_column_width=True
 )
+
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
