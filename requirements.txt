@@ -11,4 +11,6 @@ PyPDF2
 pdfplumber
 easyocr
 firebase-admin
+supabase
+numpy
 
