@@ -26,10 +26,10 @@ for i, sess in enumerate(st.session_state.sessions):
 # --- Logo with animation and welcome text ---
 st.markdown(
     """
-    <div style="text-align: center; margin-bottom: 10px;">
-        <img src="https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg"
-             style="width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;">
-        <p style="font-size:20px; font-style:italic; color:#333;">How can i help with!😊</p>
+    <div style='text-align: center; margin-bottom: 10px;'>
+        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -60,9 +60,6 @@ def check_custom_response(user_input: str):
         if keyword in normalized:
             return response
     return None
-
-# Create a scrollable container for chat messages
-chat_container = st.container()
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...")
@@ -103,29 +100,19 @@ if prompt:
 
     placeholder.empty()  # Remove typing indicator
 
-# --- Display messages in scrollable container ---
-with chat_container:
-    st.markdown(
-        """
-        <div style="height: 600px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-        """, 
-        unsafe_allow_html=True
-    )
-
-    for msg in st.session_state.current_session:
-        content = msg['message']
-        if msg['role'] == "Agent":
-            st.markdown(
-                f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>",
-                unsafe_allow_html=True
-            )
-        else:  # User
-            st.markdown(
-                f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
-                unsafe_allow_html=True
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)
+# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
+for msg in st.session_state.current_session:
+    content = msg['message']
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
