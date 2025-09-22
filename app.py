@@ -13,17 +13,6 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-# GPT circular logo above chat buttons
-st.sidebar.markdown(
-    """
-    <div style='text-align:center; margin-bottom:10px;'>
-        <img src='https://github.com/ABiswajitMohapatra/Large-Language-Model/blob/main/pic.jpg'
-             style='width:70px; height:70px; border-radius:50%; display:block; margin-left:auto; margin-right:auto;'>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
@@ -33,10 +22,6 @@ if st.sidebar.button("Clear Chat"):
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
-
-if st.sidebar.button("Save Session"):
-    if st.session_state.current_session not in st.session_state.sessions:
-        st.session_state.sessions.append(st.session_state.current_session.copy())
 
 # --- Logo with animation and welcome text ---
 st.markdown(
@@ -129,3 +114,7 @@ for msg in st.session_state.current_session:
             unsafe_allow_html=True
         )
 
+# --- Save session ---
+if st.sidebar.button("Save Session"):
+    if st.session_state.current_session not in st.session_state.sessions:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
