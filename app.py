@@ -5,7 +5,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
-# Initialize session states
+# --- Initialize session states ---
 if "index" not in st.session_state:
     st.session_state.index = create_or_load_index()
 if "chat_history" not in st.session_state:
@@ -18,7 +18,7 @@ if "current_chat" not in st.session_state:
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
 
-# Custom responses
+# --- Custom responses ---
 CUSTOM_RESPONSES = {
     "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
@@ -35,16 +35,13 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# Sidebar
+# --- Sidebar ---
 with st.sidebar:
     st.title("Chat History")
 
-    # New Chat button
     if st.button("+ New Chat", use_container_width=True):
         if st.session_state.current_chat["messages"]:
-            if st.session_state.current_chat not in st.session_state.chat_history:
-                st.session_state.chat_history.append(st.session_state.current_chat)
-
+            st.session_state.chat_history.append(st.session_state.current_chat)
         st.session_state.current_chat = {
             "id": len(st.session_state.chat_history),
             "title": "New Chat",
@@ -53,7 +50,6 @@ with st.sidebar:
         }
         st.rerun()
 
-    # Clear all chats button
     if st.button("Clear All Chats", type="secondary", use_container_width=True):
         st.session_state.chat_history = []
         st.session_state.current_chat = {
@@ -64,18 +60,13 @@ with st.sidebar:
         }
         st.rerun()
 
-    # Display chat history
     st.divider()
     for chat in reversed(st.session_state.chat_history):
-        if st.button(
-            f"💬 {chat['title']}\n{chat['timestamp']}",
-            key=f"chat_{chat['id']}",
-            use_container_width=True
-        ):
+        if st.button(f"💬 {chat['title']}\n{chat['timestamp']}", key=f"chat_{chat['id']}", use_container_width=True):
             st.session_state.current_chat = chat
             st.rerun()
 
-# Logo and welcome text
+# --- Logo & Welcome Text ---
 st.markdown(
     """
     <div style="text-align: center; margin-bottom: 10px;">
@@ -93,31 +84,25 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Display current chat messages
+# --- Display chat messages ---
 for msg in st.session_state.current_chat["messages"]:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# Chat input
-prompt = st.chat_input("Say something...")
+# --- Chat input ---
+prompt = st.chat_input("Say something...", key="chat_input")
 
-# Handle text input
 if prompt:
-    # Update chat title if it's the first message
+    # Update chat title if first message
     if not st.session_state.current_chat["messages"]:
         st.session_state.current_chat["title"] = prompt[:30] + "..." if len(prompt) > 30 else prompt
 
     # Add user message
-    st.session_state.current_chat["messages"].append({
-        "role": "user",
-        "content": prompt
-    })
-
-    # Display user message
+    st.session_state.current_chat["messages"].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
 
-    # Show typing indicator
+    # Typing indicator
     placeholder = st.empty()
     placeholder.markdown(
         """
@@ -143,42 +128,22 @@ if prompt:
 
     # Generate response
     custom_answer = check_custom_response(prompt.lower())
-    if custom_answer:
-        response = custom_answer
-    else:
-        response = chat_with_agent(prompt, st.session_state.index, st.session_state.current_chat["messages"])
+    response = custom_answer if custom_answer else chat_with_agent(prompt, st.session_state.index, st.session_state.current_chat["messages"])
 
-    # Remove typing indicator and display response
     placeholder.empty()
     with st.chat_message("assistant"):
         st.write(response)
 
-    # Add assistant message
-    st.session_state.current_chat["messages"].append({
-        "role": "assistant",
-        "content": response
-    })
+    st.session_state.current_chat["messages"].append({"role": "assistant", "content": response})
 
-    # Auto-save current chat
     if st.session_state.current_chat not in st.session_state.chat_history:
         st.session_state.chat_history.append(st.session_state.current_chat.copy())
 
-# Add styling
+# --- Sidebar & button styling ---
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] {
-        background-color: #f0f2f6;
-        padding: 1rem;
-    }
-    .stButton button {
-        width: 100%;
-        text-align: left;
-        padding: 0.5rem;
-        background-color: white;
-        margin-bottom: 0.5rem;
-    }
-    .stButton button:hover {
-        background-color: #e6e6e6;
-    }
+    [data-testid="stSidebar"] { background-color: #f0f2f6; padding: 1rem; }
+    .stButton button { width: 100%; text-align: left; padding: 0.5rem; background-color: white; margin-bottom: 0.5rem; }
+    .stButton button:hover { background-color: #e6e6e6; }
     </style>
 """, unsafe_allow_html=True)
