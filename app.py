@@ -24,22 +24,29 @@ for i, sess in enumerate(st.session_state.sessions):
         st.session_state.current_session = sess.copy()
 
 # --- Logo with animation and welcome text ---
+# --- Display messages inside scrollable container (no autoscroll) ---
 st.markdown(
     """
-    <div style='text-align: center; margin-bottom: 10px;'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
-    </div>
-    <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    </style>
+    <div style="height:400px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:10px;" id="chat-box">
     """,
     unsafe_allow_html=True
 )
+
+for msg in st.session_state.current_session:
+    content = msg['message']
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 
 # --- Message handler ---
 def add_message(role, message):
@@ -118,4 +125,5 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
