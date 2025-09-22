@@ -8,7 +8,7 @@ st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
 if 'sessions' not in st.session_state:
-    st.session_state.sessions = []  # List of saved sessions
+    st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
@@ -19,7 +19,6 @@ if st.sidebar.button("New Chat"):
 if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
 
-# Display saved sessions in sidebar
 for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
@@ -117,5 +116,5 @@ for msg in st.session_state.current_session:
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
-    if st.session_state.current_session not in st.session_state.sessions and st.session_state.current_session:
+    if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
