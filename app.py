@@ -17,7 +17,7 @@ if 'current_session' not in st.session_state:
 st.sidebar.markdown(
     """
     <div style='text-align:center; margin-bottom:10px;'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/gpt.jpg'
+        <img src='https://github.com/ABiswajitMohapatra/Large-Language-Model/blob/main/pic.jpg'
              style='width:70px; height:70px; border-radius:50%; display:block; margin-left:auto; margin-right:auto;'>
     </div>
     """,
@@ -128,3 +128,4 @@ for msg in st.session_state.current_session:
             f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
             unsafe_allow_html=True
         )
+
