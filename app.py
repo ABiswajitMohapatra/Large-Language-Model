@@ -94,14 +94,15 @@ def check_custom_response(user_input: str):
 # --- Chat interface with upload functionality ---
 chat_container = st.container()
 
-# Other valid options:
-icon=":material_attach_file:"  # Attachment icon
-icon=":material_file_upload:"  # File upload icon
-# Or use an emoji
-icon="📎"                      # Paperclip emoji
+# Chat input with upload icon
+prompt = st.chat_input(
+    "Say something...",
+    key="chat_input",
+    icon=":material_upload:"
+)
 
 # Handle file upload when icon is clicked
-if prompt == "":  # Icon clicked but no text entered
+if prompt is None:  # Icon clicked but no text entered
     st.session_state.show_uploader = True
 
 if st.session_state.show_uploader:
@@ -174,4 +175,5 @@ with chat_container:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
