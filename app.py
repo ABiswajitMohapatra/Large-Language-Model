@@ -2,8 +2,39 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
 import uuid
+import firebase_admin
+from firebase_admin import credentials, firestore
 
-st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
+st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
+
+# --- Initialize Firebase ---
+if 'firebase_app' not in st.session_state:
+    cred_dict = {
+        "type": st.secrets["FIREBASE"]["type"],
+        "project_id": st.secrets["FIREBASE"]["project_id"],
+        "private_key_id": st.secrets["FIREBASE"]["private_key_id"],
+        "private_key": st.secrets["FIREBASE"]["private_key"].replace("\\n", "\n"),
+        "client_email": st.secrets["FIREBASE"]["client_email"],
+        "client_id": st.secrets["FIREBASE"]["client_id"],
+        "auth_uri": st.secrets["FIREBASE"]["auth_uri"],
+        "token_uri": st.secrets["FIREBASE"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["FIREBASE"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["FIREBASE"]["client_x509_cert_url"]
+    }
+    cred = credentials.Certificate(cred_dict)
+    st.session_state.firebase_app = firebase_admin.initialize_app(cred)
+    st.session_state.db = firestore.client()
+
+# --- Load chat from query parameter if exists ---
+query_params = st.experimental_get_query_params()
+if "session" in query_params:
+    session_id = query_params["session"][0]
+    doc_ref = st.session_state.db.collection("chats").document(session_id)
+    doc = doc_ref.get()
+    if doc.exists:
+        st.session_state.current_session = doc.to_dict()["messages"]
+    else:
+        st.session_state.current_session = []
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -12,12 +43,6 @@ if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
-
-# --- Generate a unique session ID for shareable link ---
-if 'session_id' not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
-if 'all_sessions' not in st.session_state:
-    st.session_state.all_sessions = {}
 
 # --- Sidebar ---
 st.sidebar.title("Chats")
@@ -36,7 +61,7 @@ st.markdown(
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help with!😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -74,7 +99,7 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # --- Typing indicator with backward arrow animation ---
+    # --- Typing indicator ---
     placeholder = st.empty()
     placeholder.markdown(
         """
@@ -83,10 +108,7 @@ if prompt:
             <span class="arrow">&#10148;</span>
         </div>
         <style>
-        .arrow {
-            display:inline-block;
-            animation: moveArrow 1s infinite linear;
-        }
+        .arrow { display:inline-block; animation: moveArrow 1s infinite linear; }
         @keyframes moveArrow {
             0% { transform: translateX(0) rotate(180deg); }
             50% { transform: translateX(-10px) rotate(180deg); }
@@ -96,7 +118,7 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)  # simulate typing
+    time.sleep(1)
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -105,40 +127,33 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
 
-# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
+# --- Display messages ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
-        st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
-            unsafe_allow_html=True
-        )
-    else:  # User
-        st.markdown(
-            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>", unsafe_allow_html=True)
 
-# --- Save session ---
+# --- Save session to Firebase ---
 if st.sidebar.button("Save Session"):
-    if st.session_state.current_session not in st.session_state.sessions:
-        st.session_state.sessions.append(st.session_state.current_session.copy())
-    st.session_state.all_sessions[st.session_state.session_id] = st.session_state.current_session.copy()
+    session_id = str(uuid.uuid4())
+    st.session_state.sessions.append(st.session_state.current_session.copy())
+    db = st.session_state.db
+    doc_ref = db.collection("chats").document(session_id)
+    doc_ref.set({"messages": st.session_state.current_session})
+    shareable_link = f"{st.request.url}?session={session_id}"
+    st.success(f"Session saved! Shareable link: [Click Here]({shareable_link})")
 
-# --- Generate shareable link ---
-# Replace this with your actual deployed Streamlit app URL
-app_url = "https://biswajitlex.streamlit.app"
-shareable_link = f"{app_url}/?session={st.session_state.session_id}"
-st.sidebar.markdown(f"**Share this chat:** [Click Here]({shareable_link})")
+# --- Share buttons ---
+if 'shareable_link' in locals():
+    whatsapp_link = f"https://wa.me/?text={shareable_link}"
+    st.sidebar.markdown(f"[Share on WhatsApp]({whatsapp_link})")
 
-# --- Additional share buttons ---
-whatsapp_link = f"https://wa.me/?text={shareable_link}"
-st.sidebar.markdown(f"[Share on WhatsApp]({whatsapp_link})")
+    telegram_link = f"https://t.me/share/url?url={shareable_link}&text=Check%20out%20this%20chat!"
+    st.sidebar.markdown(f"[Share on Telegram]({telegram_link})")
 
-telegram_link = f"https://t.me/share/url?url={shareable_link}&text=Check%20out%20this%20chat!"
-st.sidebar.markdown(f"[Share on Telegram]({telegram_link})")
-
-email_link = f"mailto:?subject=Check%20this%20chat&body={shareable_link}"
-st.sidebar.markdown(f"[Share via Email]({email_link})")
+    email_link = f"mailto:?subject=Check%20this%20chat&body={shareable_link}"
+    st.sidebar.markdown(f"[Share via Email]({email_link})")
