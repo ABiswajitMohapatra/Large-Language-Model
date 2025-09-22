@@ -8,7 +8,7 @@ from firebase_admin import credentials, firestore
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
 # --- Initialize Firebase ---
-if 'firebase_app' not in st.session_state:
+if not firebase_admin._apps:
     cred_dict = {
         "type": st.secrets["FIREBASE"]["type"],
         "project_id": st.secrets["FIREBASE"]["project_id"],
@@ -22,19 +22,9 @@ if 'firebase_app' not in st.session_state:
         "client_x509_cert_url": st.secrets["FIREBASE"]["client_x509_cert_url"]
     }
     cred = credentials.Certificate(cred_dict)
-    st.session_state.firebase_app = firebase_admin.initialize_app(cred)
-    st.session_state.db = firestore.client()
+    firebase_admin.initialize_app(cred)
 
-# --- Load chat from query parameter if exists ---
-query_params = st.experimental_get_query_params()
-if "session" in query_params:
-    session_id = query_params["session"][0]
-    doc_ref = st.session_state.db.collection("chats").document(session_id)
-    doc = doc_ref.get()
-    if doc.exists:
-        st.session_state.current_session = doc.to_dict()["messages"]
-    else:
-        st.session_state.current_session = []
+db = firestore.client()
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -43,6 +33,8 @@ if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
 # --- Sidebar ---
 st.sidebar.title("Chats")
@@ -55,23 +47,17 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo with animation and welcome text ---
-st.markdown(
-    """
-    <div style='text-align: center; margin-bottom: 10px;'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help with!😊</p>
-    </div>
-    <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# --- Logo with animation ---
+st.markdown("""
+<div style='text-align: center; margin-bottom: 10px;'>
+    <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+         style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+    <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
+</div>
+<style>
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+</style>
+""", unsafe_allow_html=True)
 
 # --- Message handler ---
 def add_message(role, message):
@@ -99,25 +85,17 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # --- Typing indicator ---
     placeholder = st.empty()
-    placeholder.markdown(
-        """
-        <div style="display:flex; align-items:center; color:gray; font-style:italic;">
-            <span style="margin-right:5px;">Agent is typing</span>
-            <span class="arrow">&#10148;</span>
-        </div>
-        <style>
-        .arrow { display:inline-block; animation: moveArrow 1s infinite linear; }
-        @keyframes moveArrow {
-            0% { transform: translateX(0) rotate(180deg); }
-            50% { transform: translateX(-10px) rotate(180deg); }
-            100% { transform: translateX(0) rotate(180deg); }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    placeholder.markdown("""
+    <div style="display:flex; align-items:center; color:gray; font-style:italic;">
+        <span style="margin-right:5px;">Agent is typing</span>
+        <span class="arrow">&#10148;</span>
+    </div>
+    <style>
+    .arrow { display:inline-block; animation: moveArrow 1s infinite linear; }
+    @keyframes moveArrow { 0% { transform: translateX(0) rotate(180deg); } 50% { transform: translateX(-10px) rotate(180deg); } 100% { transform: translateX(0) rotate(180deg); } }
+    </style>
+    """, unsafe_allow_html=True)
     time.sleep(1)
 
     custom_answer = check_custom_response(normalized_prompt)
@@ -139,21 +117,21 @@ for msg in st.session_state.current_session:
 
 # --- Save session to Firebase ---
 if st.sidebar.button("Save Session"):
-    session_id = str(uuid.uuid4())
-    st.session_state.sessions.append(st.session_state.current_session.copy())
-    db = st.session_state.db
-    doc_ref = db.collection("chats").document(session_id)
-    doc_ref.set({"messages": st.session_state.current_session})
-    shareable_link = f"{st.request.url}?session={session_id}"
-    st.success(f"Session saved! Shareable link: [Click Here]({shareable_link})")
+    if st.session_state.current_session not in st.session_state.sessions:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
+    # Save in Firebase
+    db.collection("chat_sessions").document(st.session_state.session_id).set({
+        "messages": st.session_state.current_session
+    })
+
+# --- Generate shareable link ---
+shareable_link = f"{st.request.url}?session={st.session_state.session_id}"
+st.sidebar.markdown(f"**Share this chat:** [Click Here]({shareable_link})")
 
 # --- Share buttons ---
-if 'shareable_link' in locals():
-    whatsapp_link = f"https://wa.me/?text={shareable_link}"
-    st.sidebar.markdown(f"[Share on WhatsApp]({whatsapp_link})")
-
-    telegram_link = f"https://t.me/share/url?url={shareable_link}&text=Check%20out%20this%20chat!"
-    st.sidebar.markdown(f"[Share on Telegram]({telegram_link})")
-
-    email_link = f"mailto:?subject=Check%20this%20chat&body={shareable_link}"
-    st.sidebar.markdown(f"[Share via Email]({email_link})")
+whatsapp_link = f"https://wa.me/?text={shareable_link}"
+st.sidebar.markdown(f"[Share on WhatsApp]({whatsapp_link})")
+telegram_link = f"https://t.me/share/url?url={shareable_link}&text=Check%20out%20this%20chat!"
+st.sidebar.markdown(f"[Share on Telegram]({telegram_link})")
+email_link = f"mailto:?subject=Check%20this%20chat&body={shareable_link}"
+st.sidebar.markdown(f"[Share via Email]({email_link})")
