@@ -62,6 +62,17 @@ def check_custom_response(user_input: str):
     return None
 
 # --- Chat input ---
+# --- Custom style for chat input placeholder ---
+st.markdown(
+    """
+    <style>
+    div[data-baseweb="input"] input::placeholder {
+        color: skyblue !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
@@ -118,5 +129,6 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
