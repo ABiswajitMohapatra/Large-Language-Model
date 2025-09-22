@@ -1,19 +1,31 @@
 import streamlit as st
-from model import load_documents, create_or_load_index, chat_with_agent
-import time
-import uuid
 import firebase_admin
 from firebase_admin import credentials, firestore
-
-st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
 # Convert secrets to dict
 cred_dict = dict(st.secrets["FIREBASE"])
 
-# Initialize Firebase
-if 'firebase_app' not in st.session_state:
-    cred = credentials.Certificate(cred_dict)
-    st.session_state.firebase_app = firebase_admin.initialize_app(cred)
+# Fix for multiline private_key if needed (only if you see \n instead of actual newlines)
+if "\\n" in cred_dict["private_key"]:
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+
+# Initialize Firebase app if not already done
+try:
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(cred_dict)
+        st.session_state.firebase_app = firebase_admin.initialize_app(cred)
+    else:
+        st.session_state.firebase_app = firebase_admin.get_app()
+except Exception as e:
+    st.error(f"Firebase initialization failed: {e}")
+
+# Set up Firestore client for use in the app (add this if you use Firestore)
+try:
+    if "db" not in st.session_state:
+        st.session_state.db = firestore.client()
+except Exception as e:
+    st.error(f"Firestore client initialization failed: {e}")
+
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -122,4 +134,5 @@ if st.sidebar.button("Save Session"):
     session_id = str(uuid.uuid4())
     chats_ref.document(session_id).set({"messages": st.session_state.current_session})
     st.sidebar.success("Session saved to Firebase!")
+
 
