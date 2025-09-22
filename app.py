@@ -1,24 +1,51 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
-from datetime import datetime
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
-# --- Initialize session states ---
-if "index" not in st.session_state:
+# --- Initialize index and sessions ---
+if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "current_chat" not in st.session_state:
-    st.session_state.current_chat = {
-        "id": 0,
-        "title": "New Chat",
-        "messages": [],
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-    }
+if 'sessions' not in st.session_state:
+    st.session_state.sessions = []  # List of saved sessions
+if 'current_session' not in st.session_state:
+    st.session_state.current_session = []
 
-# --- Custom responses ---
+# --- Sidebar ---
+st.sidebar.title("Chats")
+if st.sidebar.button("New Chat"):
+    st.session_state.current_session = []
+if st.sidebar.button("Clear Chat"):
+    st.session_state.current_session = []
+
+# Display saved sessions in sidebar
+for i, sess in enumerate(st.session_state.sessions):
+    if st.sidebar.button(f"Session {i+1}"):
+        st.session_state.current_session = sess.copy()
+
+# --- Logo with animation and welcome text ---
+st.markdown(
+    """
+    <div style='text-align: center; margin-bottom: 10px;'>
+        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
+    </div>
+    <style>
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Message handler ---
+def add_message(role, message):
+    st.session_state.current_session.append({"role": role, "message": message})
+
 CUSTOM_RESPONSES = {
     "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
@@ -35,74 +62,13 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Sidebar ---
-with st.sidebar:
-    st.title("Chat History")
-
-    if st.button("+ New Chat", use_container_width=True):
-        if st.session_state.current_chat["messages"]:
-            st.session_state.chat_history.append(st.session_state.current_chat)
-        st.session_state.current_chat = {
-            "id": len(st.session_state.chat_history),
-            "title": "New Chat",
-            "messages": [],
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-        }
-        st.rerun()
-
-    if st.button("Clear All Chats", type="secondary", use_container_width=True):
-        st.session_state.chat_history = []
-        st.session_state.current_chat = {
-            "id": 0,
-            "title": "New Chat",
-            "messages": [],
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-        }
-        st.rerun()
-
-    st.divider()
-    for chat in reversed(st.session_state.chat_history):
-        if st.button(f"💬 {chat['title']}\n{chat['timestamp']}", key=f"chat_{chat['id']}", use_container_width=True):
-            st.session_state.current_chat = chat
-            st.rerun()
-
-# --- Logo & Welcome Text ---
-st.markdown(
-    """
-    <div style="text-align: center; margin-bottom: 10px;">
-        <img src="https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg"
-             style="width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;">
-        <p style="font-size:20px; font-style:italic; color:#333;">How can I help with!😊</p>
-    </div>
-    <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# --- Display chat messages ---
-for msg in st.session_state.current_chat["messages"]:
-    with st.chat_message(msg["role"]):
-        st.write(msg["message"])
-
 # --- Chat input ---
-prompt = st.chat_input("Say something...", key="chat_input")
-
+prompt = st.chat_input("Say something...")
 if prompt:
-    # Update chat title if first message
-    if not st.session_state.current_chat["messages"]:
-        st.session_state.current_chat["title"] = prompt[:30] + "..." if len(prompt) > 30 else prompt
+    add_message("User", prompt)
+    normalized_prompt = prompt.strip().lower()
 
-    # Add user message
-    st.session_state.current_chat["messages"].append({"role": "user", "message": prompt})
-    with st.chat_message("user"):
-        st.write(prompt)
-
-    # Typing indicator
+    # --- Typing indicator with backward arrow animation ---
     placeholder = st.empty()
     placeholder.markdown(
         """
@@ -124,28 +90,32 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)
+    time.sleep(1)  # simulate typing
 
-    # Generate response
-    custom_answer = check_custom_response(prompt.lower())
-    response = custom_answer if custom_answer else chat_with_agent(
-        prompt, st.session_state.index, st.session_state.current_chat["messages"]
-    )
+    custom_answer = check_custom_response(normalized_prompt)
+    if custom_answer:
+        add_message("Agent", custom_answer)
+    else:
+        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+        add_message("Agent", answer)
 
-    placeholder.empty()
-    with st.chat_message("assistant"):
-        st.write(response)
+    placeholder.empty()  # Remove typing indicator
 
-    st.session_state.current_chat["messages"].append({"role": "assistant", "message": response})
+# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
+for msg in st.session_state.current_session:
+    content = msg['message']
+    if msg['role'] == "Agent":
+        st.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
+    else:  # User
+        st.markdown(
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
+            unsafe_allow_html=True
+        )
 
-    if st.session_state.current_chat not in st.session_state.chat_history:
-        st.session_state.chat_history.append(st.session_state.current_chat.copy())
-
-# --- Sidebar & button styling ---
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] { background-color: #f0f2f6; padding: 1rem; }
-    .stButton button { width: 100%; text-align: left; padding: 0.5rem; background-color: white; margin-bottom: 0.5rem; }
-    .stButton button:hover { background-color: #e6e6e6; }
-    </style>
-""", unsafe_allow_html=True)
+# --- Save session ---
+if st.sidebar.button("Save Session"):
+    if st.session_state.current_session not in st.session_state.sessions and st.session_state.current_session:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
