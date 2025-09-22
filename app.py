@@ -3,7 +3,11 @@ from model import load_documents, create_or_load_index, chat_with_agent
 import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
-
+uploaded_file = st.file_uploader("➕ Upload a file", type=["txt", "pdf"])
+if uploaded_file:
+    # Process the uploaded file
+    content = uploaded_file.read()
+    st.write("File uploaded successfully!")
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
@@ -118,3 +122,4 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
