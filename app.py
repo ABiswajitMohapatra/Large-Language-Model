@@ -17,8 +17,6 @@ if "current_chat" not in st.session_state:
         "messages": [],
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
-if "show_uploader" not in st.session_state:
-    st.session_state.show_uploader = False
 
 # Custom responses
 CUSTOM_RESPONSES = {
@@ -100,34 +98,8 @@ for msg in st.session_state.current_chat["messages"]:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# Chat input with upload icon
-prompt = st.chat_input(
-    "Say something...",
-    key="chat_input",
-    icon=":material_upload:"
-)
-
-# Handle file upload when icon is clicked
-if prompt is None:
-    st.session_state.show_uploader = True
-
-if st.session_state.show_uploader:
-    uploaded_file = st.file_uploader(
-        "Upload your document",
-        type=["txt", "pdf", "doc", "docx"],
-        key="file_uploader"
-    )
-    if uploaded_file:
-        content = process_uploaded_file(uploaded_file)
-        st.success(f"File {uploaded_file.name} uploaded successfully!")
-
-        # Add file upload message to chat
-        st.session_state.current_chat["messages"].append({
-            "role": "user",
-            "content": f"Uploaded file: {uploaded_file.name}\nContent: {content[:500]}..."
-        })
-        st.session_state.show_uploader = False
-        st.rerun()
+# Chat input
+prompt = st.chat_input("Say something...")
 
 # Handle text input
 if prompt:
