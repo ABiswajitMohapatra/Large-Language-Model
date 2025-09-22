@@ -87,7 +87,7 @@ st.markdown(
 # --- Display chat messages ---
 for msg in st.session_state.current_chat["messages"]:
     with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+        st.write(msg["message"])
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="chat_input")
@@ -98,7 +98,7 @@ if prompt:
         st.session_state.current_chat["title"] = prompt[:30] + "..." if len(prompt) > 30 else prompt
 
     # Add user message
-    st.session_state.current_chat["messages"].append({"role": "user", "content": prompt})
+    st.session_state.current_chat["messages"].append({"role": "user", "message": prompt})
     with st.chat_message("user"):
         st.write(prompt)
 
@@ -128,13 +128,15 @@ if prompt:
 
     # Generate response
     custom_answer = check_custom_response(prompt.lower())
-    response = custom_answer if custom_answer else chat_with_agent(prompt, st.session_state.index, st.session_state.current_chat["messages"])
+    response = custom_answer if custom_answer else chat_with_agent(
+        prompt, st.session_state.index, st.session_state.current_chat["messages"]
+    )
 
     placeholder.empty()
     with st.chat_message("assistant"):
         st.write(response)
 
-    st.session_state.current_chat["messages"].append({"role": "assistant", "content": response})
+    st.session_state.current_chat["messages"].append({"role": "assistant", "message": response})
 
     if st.session_state.current_chat not in st.session_state.chat_history:
         st.session_state.chat_history.append(st.session_state.current_chat.copy())
