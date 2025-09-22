@@ -13,6 +13,10 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
+st.sidebar.image(
+    "https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg",
+    use_column_width=True
+)
 st.sidebar.title("Chats")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
@@ -27,18 +31,13 @@ if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
-if st.sidebar.button("Export Chat"):
-    if st.session_state.current_session:
-        chat_text = "\n".join([f"{m['role']}: {m['message']}" for m in st.session_state.current_session])
-        st.download_button("Download Chat", chat_text, file_name="chat_session.txt")
-
 # --- Logo with animation and welcome text ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 10px;'>
         <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
              style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can I help you today? 😊</p>
+        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -76,7 +75,7 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # Typing indicator with arrow animation
+    # --- Typing indicator with backward arrow animation ---
     placeholder = st.empty()
     placeholder.markdown(
         """
@@ -98,7 +97,7 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)
+    time.sleep(1)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -107,39 +106,23 @@ if prompt:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
         add_message("Agent", answer)
 
-    placeholder.empty()
+    placeholder.empty()  # Remove typing indicator
 
-# --- Display messages with styled chat bubbles ---
+# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
         st.markdown(
-            f"""
-            <div style='text-align:left; margin:5px 0; background-color:#e0f7fa; padding:8px; border-radius:10px; display:inline-block; max-width:80%;'>
-                ⚛ <b>{content}</b>
-            </div>
-            """,
+            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>",
             unsafe_allow_html=True
         )
-    else:
+    else:  # User
         st.markdown(
-            f"""
-            <div style='text-align:right; margin:5px 0; background-color:#ffecb3; padding:8px; border-radius:10px; display:inline-block; max-width:80%;'>
-                🧑‍🔬 <b>{content}</b>
-            </div>
-            """,
+            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
             unsafe_allow_html=True
         )
 
-# --- Auto-scroll to latest message ---
-st.markdown(
-    """
-    <script>
-        const chatContainers = window.parent.document.querySelectorAll('div[role="main"]');
-        if(chatContainers.length > 0) {
-            chatContainers[chatContainers.length - 1].scrollIntoView({behavior: "smooth"});
-        }
-    </script>
-    """,
-    unsafe_allow_html=True
-)
+# --- Save session ---
+if st.sidebar.button("Save Session"):
+    if st.session_state.current_session not in st.session_state.sessions:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
