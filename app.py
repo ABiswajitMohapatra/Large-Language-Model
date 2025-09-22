@@ -1,6 +1,7 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
+import uuid
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
@@ -11,6 +12,12 @@ if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
+
+# --- Generate a unique session ID for shareable link ---
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+if 'all_sessions' not in st.session_state:
+    st.session_state.all_sessions = {}
 
 # --- Sidebar ---
 st.sidebar.title("Chats")
@@ -118,3 +125,9 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+    # Save in all_sessions dictionary for shareable link
+    st.session_state.all_sessions[st.session_state.session_id] = st.session_state.current_session.copy()
+
+# --- Generate shareable link ---
+shareable_link = f"https://yourapp.com/?session={st.session_state.session_id}"
+st.sidebar.markdown(f"**Share this chat:** [Click Here]({shareable_link})")
