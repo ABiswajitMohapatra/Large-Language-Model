@@ -7,12 +7,13 @@ from firebase_admin import credentials, firestore
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
-# --- Initialize Firebase ---
+# Convert secrets to dict
+cred_dict = dict(st.secrets["FIREBASE"])
+
+# Initialize Firebase
 if 'firebase_app' not in st.session_state:
-    cred_dict = st.secrets["FIREBASE"]  # Your JSON key in Streamlit secrets
     cred = credentials.Certificate(cred_dict)
     st.session_state.firebase_app = firebase_admin.initialize_app(cred)
-    st.session_state.db = firestore.client()
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -121,3 +122,4 @@ if st.sidebar.button("Save Session"):
     session_id = str(uuid.uuid4())
     chats_ref.document(session_id).set({"messages": st.session_state.current_session})
     st.sidebar.success("Session saved to Firebase!")
+
