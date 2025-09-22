@@ -125,9 +125,18 @@ for msg in st.session_state.current_session:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-    # Save in all_sessions dictionary for shareable link
     st.session_state.all_sessions[st.session_state.session_id] = st.session_state.current_session.copy()
 
 # --- Generate shareable link ---
 shareable_link = f"https://yourapp.com/?session={st.session_state.session_id}"
 st.sidebar.markdown(f"**Share this chat:** [Click Here]({shareable_link})")
+
+# --- Additional share buttons ---
+whatsapp_link = f"https://wa.me/?text={shareable_link}"
+st.sidebar.markdown(f"[Share on WhatsApp]({whatsapp_link})")
+
+telegram_link = f"https://t.me/share/url?url={shareable_link}&text=Check%20out%20this%20chat!"
+st.sidebar.markdown(f"[Share on Telegram]({telegram_link})")
+
+email_link = f"mailto:?subject=Check%20this%20chat&body={shareable_link}"
+st.sidebar.markdown(f"[Share via Email]({email_link})")
