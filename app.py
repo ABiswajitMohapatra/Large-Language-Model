@@ -13,7 +13,7 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-# GPT circular logo
+# GPT circular logo above chat buttons
 st.sidebar.markdown(
     """
     <div style='text-align:center; margin-bottom:10px;'>
@@ -22,12 +22,6 @@ st.sidebar.markdown(
     </div>
     """,
     unsafe_allow_html=True
-)
-
-# BiswaLex logo
-st.sidebar.image(
-    "https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg",
-    use_column_width=True
 )
 
 st.sidebar.title("Chats")
