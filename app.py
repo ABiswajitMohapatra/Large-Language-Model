@@ -1,8 +1,9 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
-import base64
+import uuid
 import json
+import base64
 import urllib.parse
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
@@ -13,7 +14,7 @@ if 'index' not in st.session_state:
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
-# --- Decode chat from URL if exists ---
+# --- Load chat from URL if exists ---
 query_params = st.experimental_get_query_params()
 if "chat" in query_params:
     try:
@@ -107,7 +108,10 @@ for msg in st.session_state.current_session:
 # --- Generate shareable link ---
 chat_json = json.dumps(st.session_state.current_session)
 chat_encoded = base64.urlsafe_b64encode(chat_json.encode()).decode()
-shareable_link = f"{st.get_url()}?chat={chat_encoded}"
+
+# Replace with your deployed Streamlit app URL
+app_url = "https://yourapp.com"
+shareable_link = f"{app_url}?chat={chat_encoded}"
 encoded_link = urllib.parse.quote(shareable_link, safe=':/?=&')
 
 st.sidebar.markdown(f"**Share this chat:** [Click Here]({shareable_link})")
