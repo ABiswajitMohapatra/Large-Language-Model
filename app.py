@@ -2,16 +2,10 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
 
-# --- Page config ---
-st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
-
-# --- Inject manifest for mobile home screen shortcut ---
-st.markdown(
-    """
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4CAF50">
-    """,
-    unsafe_allow_html=True
+st.set_page_config(
+    page_title="BiswaLex", 
+    page_icon="https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg", 
+    layout="wide"
 )
 
 # --- Initialize index and sessions ---
@@ -81,9 +75,11 @@ for msg in st.session_state.current_session:
 # --- Chat input ---
 prompt = st.chat_input("Say something...")
 if prompt:
+    # Show user message immediately
     add_message("User", prompt)
     st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
+    # Typing animation (live typing effect)
     placeholder = st.empty()
     typed_text = ""
     final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
@@ -91,7 +87,7 @@ if prompt:
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
-        time.sleep(0.002)
+        time.sleep(0.002)  # typing speed
 
     add_message("Agent", final_answer)
 
@@ -99,9 +95,3 @@ if prompt:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
-# --- Sidebar helper message ---
-st.sidebar.markdown(
-    "<p style='font-size:14px; color:gray; margin-top:5px;'>Right-click on the chat input to access emojis and additional features.</p>",
-    unsafe_allow_html=True
-)
