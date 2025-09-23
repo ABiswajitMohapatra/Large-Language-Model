@@ -83,7 +83,7 @@ if prompt:
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
-        time.sleep(0.02)  # typing speed
+        time.sleep(0.01)  # typing speed
 
     add_message("Agent", final_answer)
 
@@ -91,3 +91,4 @@ if prompt:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
