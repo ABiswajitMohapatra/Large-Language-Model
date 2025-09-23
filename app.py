@@ -2,7 +2,7 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
 
-st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
+st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -11,8 +11,6 @@ if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
-if 'stop_flag' not in st.session_state:
-    st.session_state.stop_flag = False
 
 # --- Sidebar ---
 st.sidebar.title("Chats")
@@ -69,9 +67,9 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # Typing indicator
-    typing_placeholder = st.empty()
-    typing_placeholder.markdown(
+    # --- Typing indicator with backward arrow animation ---
+    placeholder = st.empty()
+    placeholder.markdown(
         """
         <div style="display:flex; align-items:center; color:gray; font-style:italic;">
             <span style="margin-right:5px;">Agent is typing</span>
@@ -91,44 +89,35 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-
-    # Stop button
-    stop_placeholder = st.empty()
-    if stop_placeholder.button("⏹️ Stop", key="stop_button"):
-        st.session_state.stop_flag = True
+    time.sleep(1)  # simulate typing
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
-        add_message("Agent", custom_answer)
+        answer = custom_answer
     else:
-        # Simulate streaming tokens
-        full_response = ""
-        response_placeholder = st.empty()
+        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
 
-        for token in chat_with_agent(prompt, st.session_state.index, st.session_state.current_session).split():
-            if st.session_state.stop_flag:
-                break
-            full_response += token + " "
-            time.sleep(0.05)  # simulate typing delay
-            response_placeholder.markdown(
-                f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{full_response}</b></div>",
-                unsafe_allow_html=True
-            )
+    placeholder.empty()  # Remove typing indicator
 
-        add_message("Agent", full_response.strip())
-        response_placeholder.empty()  # clear temp placeholder after done
+    # --- Live typing effect for Agent ---
+    live_placeholder = st.empty()
+    typed_text = ""
+    for char in answer:
+        typed_text += char
+        live_placeholder.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>",
+            unsafe_allow_html=True
+        )
+        time.sleep(0.02)  # typing speed
 
-    # Reset stop state + clear indicators
-    st.session_state.stop_flag = False
-    typing_placeholder.empty()
-    stop_placeholder.empty()
+    add_message("Agent", answer)
 
-# --- Display messages with scientific emojis ---
+# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
         st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
+            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>",
             unsafe_allow_html=True
         )
     else:  # User
