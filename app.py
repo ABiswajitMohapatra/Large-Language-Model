@@ -11,6 +11,8 @@ if 'sessions' not in st.session_state:
     st.session_state.sessions = []
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
+if 'stop_flag' not in st.session_state:
+    st.session_state.stop_flag = False
 
 # --- Sidebar ---
 st.sidebar.title("Chats")
@@ -67,8 +69,10 @@ if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
-    # --- Typing indicator with backward arrow animation ---
+    # Typing indicator
     placeholder = st.empty()
+    stop_placeholder = st.empty()
+
     placeholder.markdown(
         """
         <div style="display:flex; align-items:center; color:gray; font-style:italic;">
@@ -89,18 +93,32 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)  # simulate typing
+
+    # Add STOP button
+    if stop_placeholder.button("⏹️ Stop"):
+        st.session_state.stop_flag = True
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", answer)
+        # simulate streaming tokens
+        full_response = ""
+        for token in chat_with_agent(prompt, st.session_state.index, st.session_state.current_session).split():
+            if st.session_state.stop_flag:
+                break
+            full_response += token + " "
+            time.sleep(0.05)  # simulate typing speed
+            stop_placeholder.empty()
+            stop_placeholder.button("⏹️ Stop")
+        add_message("Agent", full_response.strip())
 
-    placeholder.empty()  # Remove typing indicator
+    # Reset stop flag
+    st.session_state.stop_flag = False
+    placeholder.empty()
+    stop_placeholder.empty()
 
-# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
+# --- Display messages ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
@@ -108,7 +126,7 @@ for msg in st.session_state.current_session:
             f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
             unsafe_allow_html=True
         )
-    else:  # User
+    else:
         st.markdown(
             f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
             unsafe_allow_html=True
