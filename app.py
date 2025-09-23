@@ -66,16 +66,11 @@ def check_custom_response(user_input: str):
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
-        uid = str(uuid.uuid4())  # unique id for JS
-        st.components.v1.html(
-            f"""
-            <div style='text-align:left; margin:5px 0; display:flex; align-items:center;'>
-                ⚛️ <b>{content}</b>
-                <button onclick="navigator.clipboard.writeText('{content.replace("'", "\\'")}')" 
-                        style='margin-left:10px; cursor:pointer;'>📋</button>
-            </div>
-            """,
-            height=50,
+        uid = str(uuid.uuid4())
+        st.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b> "
+            f"<button onclick=\"navigator.clipboard.writeText('{content.replace('\'', '\\\'')}')\">📋</button></div>",
+            unsafe_allow_html=True
         )
     else:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>", unsafe_allow_html=True)
@@ -90,7 +85,7 @@ if prompt:
     typed_text = ""
     final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
 
-    # Live typing
+    # Typing animation
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
@@ -98,17 +93,11 @@ if prompt:
 
     add_message("Agent", final_answer)
 
-    # Show final message with copy button
-    uid = str(uuid.uuid4())
-    st.components.v1.html(
-        f"""
-        <div style='text-align:left; margin:5px 0; display:flex; align-items:center;'>
-            ⚛️ <b>{final_answer}</b>
-            <button onclick="navigator.clipboard.writeText('{final_answer.replace("'", "\\'")}')" 
-                    style='margin-left:10px; cursor:pointer;'>📋</button>
-        </div>
-        """,
-        height=50,
+    # Show copy button for the final agent message without touching typing logic
+    st.markdown(
+        f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{final_answer}</b> "
+        f"<button onclick=\"navigator.clipboard.writeText('{final_answer.replace('\'', '\\\'')}')\">📋</button></div>",
+        unsafe_allow_html=True
     )
 
 # --- Save session ---
