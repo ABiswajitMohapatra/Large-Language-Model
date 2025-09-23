@@ -5,12 +5,15 @@ import time
 st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
 # --- Initialize index and sessions ---
-if 'index' not in st.session_state:
+if "index" not in st.session_state:
     st.session_state.index = create_or_load_index()
-if 'sessions' not in st.session_state:
+if "sessions" not in st.session_state:
     st.session_state.sessions = []
-if 'current_session' not in st.session_state:
+if "current_session" not in st.session_state:
     st.session_state.current_session = []
+# Add stop_streaming state
+if "stop_streaming" not in st.session_state:
+    st.session_state.stop_streaming = False
 
 # --- Sidebar ---
 st.sidebar.title("Chats⚛️")
@@ -26,10 +29,10 @@ for i, sess in enumerate(st.session_state.sessions):
 # --- Logo with animation and welcome text ---
 st.markdown(
     """
-    <div style='text-align: center; margin-bottom: 10px;'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
+    <div style=text-align: center; margin-bottom: 10px;>
+        <img src=https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg
+             style=width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;>
+        <p style=font-size:20px; font-style:italic; color:#333;>How can i help with!😊</p>
     </div>
     <style>
     @keyframes bounce {
@@ -73,56 +76,101 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Create two columns for chat input and stop button ---
+input_col, stop_col = st.columns([6, 1])
+
+# --- Chat input in first column ---
+with input_col:
+    prompt = st.chat_input("Say something...")
+
+# --- Stop button in second column ---
+with stop_col:
+    if st.button("Stop", type="primary"):
+        st.session_state.stop_streaming = True
+
 if prompt:
     add_message("User", prompt)
     normalized_prompt = prompt.strip().lower()
 
+    # Reset stop_streaming state for new message
+    st.session_state.stop_streaming = False
+
     # --- Typing indicator with backward arrow animation ---
     placeholder = st.empty()
-    placeholder.markdown(
-        """
-        <div style="display:flex; align-items:center; color:gray; font-style:italic;">
-            <span style="margin-right:5px;">Agent is typing</span>
-            <span class="arrow">&#10148;</span>
-        </div>
-        <style>
-        .arrow {
-            display:inline-block;
-            animation: moveArrow 1s infinite linear;
-        }
-        @keyframes moveArrow {
-            0% { transform: translateX(0) rotate(180deg); }
-            50% { transform: translateX(-10px) rotate(180deg); }
-            100% { transform: translateX(0) rotate(180deg); }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    time.sleep(1)  # simulate typing
+    message_placeholder = st.empty()  # Add this for streaming response
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
+        placeholder.markdown(
+            """
+            <div style="display:flex; align-items:center; color:gray; font-style:italic;">
+                <span style="margin-right:5px;">Agent is typing</span>
+                <span class="arrow">&#10148;</span>
+            </div>
+            <style>
+            .arrow {
+                display:inline-block;
+                animation: moveArrow 1s infinite linear;
+            }
+            @keyframes moveArrow {
+                0% { transform: translateX(0) rotate(180deg); }
+                50% { transform: translateX(-10px) rotate(180deg); }
+                100% { transform: translateX(0) rotate(180deg); }
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        time.sleep(1)
         add_message("Agent", custom_answer)
     else:
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", answer)
+        # Modify chat_with_agent to support streaming
+        response = ""
+        for chunk in chat_with_agent(prompt, st.session_state.index, st.session_state.current_session):
+            if st.session_state.stop_streaming:
+                break
+
+            response += chunk
+            # Update typing indicator
+            placeholder.markdown(
+                """
+                <div style="display:flex; align-items:center; color:gray; font-style:italic;">
+                    <span style="margin-right:5px;">Agent is typing</span>
+                    <span class="arrow">&#10148;</span>
+                </div>
+                <style>
+                .arrow {
+                    display:inline-block;
+                    animation: moveArrow 1s infinite linear;
+                }
+                @keyframes moveArrow {
+                    0% { transform: translateX(0) rotate(180deg); }
+                    50% { transform: translateX(-10px) rotate(180deg); }
+                    100% { transform: translateX(0) rotate(180deg); }
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
+            # Update message in real-time
+            message_placeholder.markdown(f"⚛️ <b>{response}</b>▌", unsafe_allow_html=True)
+
+        add_message("Agent", response)
 
     placeholder.empty()  # Remove typing indicator
+    message_placeholder.empty()  # Remove streaming placeholder
 
 # --- Display messages with scientific emojis, bold, and Markdown (clean) ---
 for msg in st.session_state.current_session:
-    content = msg['message']
-    if msg['role'] == "Agent":
+    content = msg["message"]
+    if msg["role"] == "Agent":
         st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
+            f"<div style=text-align:left; margin:5px 0;>⚛️ <b>{content}</b></div>",
             unsafe_allow_html=True
         )
     else:  # User
         st.markdown(
-            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
+            f"<div style=text-align:right; margin:5px 0;>🧑‍🔬 <b>{content}</b></div>",
             unsafe_allow_html=True
         )
 
