@@ -1,13 +1,13 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
-
-st.set_page_config(
-    page_title="BiswaLex", 
-    page_icon="https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg", 
-    layout="wide"
+st.markdown(
+    """
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    """,
+    unsafe_allow_html=True
 )
-
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
@@ -95,3 +95,4 @@ if prompt:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
