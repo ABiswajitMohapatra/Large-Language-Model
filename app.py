@@ -1,6 +1,7 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
+import uuid
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
@@ -61,18 +62,20 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Display old messages first with copy button for agent ---
+# --- Display old messages first with copy button ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
-        st.markdown(
+        uid = str(uuid.uuid4())  # unique id for JS
+        st.components.v1.html(
             f"""
             <div style='text-align:left; margin:5px 0; display:flex; align-items:center;'>
                 ⚛️ <b>{content}</b>
-                <button style="margin-left:10px; cursor:pointer;" onclick="navigator.clipboard.writeText('{content.replace("'", "\\'")}')">📋</button>
+                <button onclick="navigator.clipboard.writeText('{content.replace("'", "\\'")}')" 
+                        style='margin-left:10px; cursor:pointer;'>📋</button>
             </div>
             """,
-            unsafe_allow_html=True
+            height=50,
         )
     else:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>", unsafe_allow_html=True)
@@ -80,21 +83,33 @@ for msg in st.session_state.current_session:
 # --- Chat input ---
 prompt = st.chat_input("Say something...")
 if prompt:
-    # Show user message immediately
     add_message("User", prompt)
     st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
-    # Typing animation (live typing effect)
     placeholder = st.empty()
     typed_text = ""
     final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
 
+    # Live typing
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
-        time.sleep(0.002)  # typing speed
+        time.sleep(0.002)
 
     add_message("Agent", final_answer)
+
+    # Show final message with copy button
+    uid = str(uuid.uuid4())
+    st.components.v1.html(
+        f"""
+        <div style='text-align:left; margin:5px 0; display:flex; align-items:center;'>
+            ⚛️ <b>{final_answer}</b>
+            <button onclick="navigator.clipboard.writeText('{final_answer.replace("'", "\\'")}')" 
+                    style='margin-left:10px; cursor:pointer;'>📋</button>
+        </div>
+        """,
+        height=50,
+    )
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
