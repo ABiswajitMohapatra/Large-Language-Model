@@ -61,70 +61,31 @@ def check_custom_response(user_input: str):
             return response
     return None
 
+# --- Display old messages first ---
+for msg in st.session_state.current_session:
+    if msg['role'] == "Agent":
+        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+
 # --- Chat input ---
 prompt = st.chat_input("Say something...")
 if prompt:
+    # Show user message immediately
     add_message("User", prompt)
-    normalized_prompt = prompt.strip().lower()
+    st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
-    # --- Typing indicator with backward arrow animation ---
+    # Typing animation (live typing effect)
     placeholder = st.empty()
-    placeholder.markdown(
-        """
-        <div style="display:flex; align-items:center; color:gray; font-style:italic;">
-            <span style="margin-right:5px;">Agent is typing</span>
-            <span class="arrow">&#10148;</span>
-        </div>
-        <style>
-        .arrow {
-            display:inline-block;
-            animation: moveArrow 1s infinite linear;
-        }
-        @keyframes moveArrow {
-            0% { transform: translateX(0) rotate(180deg); }
-            50% { transform: translateX(-10px) rotate(180deg); }
-            100% { transform: translateX(0) rotate(180deg); }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    time.sleep(1)  # simulate typing
-
-    custom_answer = check_custom_response(normalized_prompt)
-    if custom_answer:
-        answer = custom_answer
-    else:
-        answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-
-    placeholder.empty()  # Remove typing indicator
-
-    # --- Live typing for Agent ---
     typed_text = ""
-    agent_placeholder = st.empty()
-    for char in answer:
+    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+
+    for char in final_answer:
         typed_text += char
-        agent_placeholder.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>",
-            unsafe_allow_html=True
-        )
-        time.sleep(0.02)
+        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        time.sleep(0.02)  # typing speed
 
-    add_message("Agent", answer)
-
-# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
-for msg in st.session_state.current_session:
-    content = msg['message']
-    if msg['role'] == "Agent":
-        st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{content}</b></div>",
-            unsafe_allow_html=True
-        )
-    else:  # User
-        st.markdown(
-            f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
-            unsafe_allow_html=True
-        )
+    add_message("Agent", final_answer)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
