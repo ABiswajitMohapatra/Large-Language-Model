@@ -70,10 +70,8 @@ if prompt:
     normalized_prompt = prompt.strip().lower()
 
     # Typing indicator
-    placeholder = st.empty()
-    stop_placeholder = st.empty()
-
-    placeholder.markdown(
+    typing_placeholder = st.empty()
+    typing_placeholder.markdown(
         """
         <div style="display:flex; align-items:center; color:gray; font-style:italic;">
             <span style="margin-right:5px;">Agent is typing</span>
@@ -94,31 +92,34 @@ if prompt:
         unsafe_allow_html=True
     )
 
-    # Add STOP button
-    if stop_placeholder.button("⏹️ Stop"):
+    # Stop button (only appears while typing)
+    stop_placeholder = st.empty()
+    if stop_placeholder.button("⏹️ Stop", key="stop_button"):
         st.session_state.stop_flag = True
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
         add_message("Agent", custom_answer)
     else:
-        # simulate streaming tokens
+        # Simulate streaming tokens
         full_response = ""
+        response_placeholder = st.empty()
+
         for token in chat_with_agent(prompt, st.session_state.index, st.session_state.current_session).split():
             if st.session_state.stop_flag:
                 break
             full_response += token + " "
-            time.sleep(0.05)  # simulate typing speed
-            stop_placeholder.empty()
-            stop_placeholder.button("⏹️ Stop")
+            time.sleep(0.05)  # simulate typing delay
+            response_placeholder.markdown(f"<i>{full_response}</i>", unsafe_allow_html=True)
+
         add_message("Agent", full_response.strip())
 
-    # Reset stop flag
+    # Reset stop state + clear placeholders
     st.session_state.stop_flag = False
-    placeholder.empty()
+    typing_placeholder.empty()
     stop_placeholder.empty()
 
-# --- Display messages ---
+# --- Display messages with scientific emojis ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
@@ -126,7 +127,7 @@ for msg in st.session_state.current_session:
             f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b></div>",
             unsafe_allow_html=True
         )
-    else:
+    else:  # User
         st.markdown(
             f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>",
             unsafe_allow_html=True
