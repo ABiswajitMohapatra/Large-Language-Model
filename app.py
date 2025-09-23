@@ -89,7 +89,7 @@ if prompt:
         """,
         unsafe_allow_html=True
     )
-    time.sleep(1)  # simulate typing
+    time.sleep(1)
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
@@ -97,23 +97,23 @@ if prompt:
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
 
-    placeholder.empty()  # Remove typing indicator
+    placeholder.empty()
 
-    # --- Live typing effect for Agent ---
-    live_placeholder = st.empty()
+    # --- Live typing for Agent ---
     typed_text = ""
+    agent_placeholder = st.empty()
     for char in answer:
         typed_text += char
-        live_placeholder.markdown(
+        agent_placeholder.markdown(
             f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>",
             unsafe_allow_html=True
         )
-        time.sleep(0.02)  # typing speed
+        time.sleep(0.02)
 
     add_message("Agent", answer)
 
-# --- Display messages with scientific emojis, bold, and Markdown (clean) ---
-for msg in st.session_state.current_session:
+# --- Display old messages (skip last Agent, already live-typed) ---
+for msg in st.session_state.current_session[:-1]:
     content = msg['message']
     if msg['role'] == "Agent":
         st.markdown(
