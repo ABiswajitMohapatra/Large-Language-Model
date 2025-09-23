@@ -61,12 +61,21 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Display old messages first ---
+# --- Display old messages first with copy button for agent ---
 for msg in st.session_state.current_session:
+    content = msg['message']
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div style='text-align:left; margin:5px 0; display:flex; align-items:center;'>
+                ⚛️ <b>{content}</b>
+                <button style="margin-left:10px; cursor:pointer;" onclick="navigator.clipboard.writeText('{content.replace("'", "\\'")}')">📋</button>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     else:
-        st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>", unsafe_allow_html=True)
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...")
@@ -92,12 +101,8 @@ if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
-# --- Sidebar helper message directly under Save Session ---
+# --- Sidebar helper message ---
 st.sidebar.markdown(
-    "<p style='font-size:14px; color:gray; margin-top:5px;'>Right-click on the chat input to access emojis and additional features.</p>",
+    "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
-
-
-
