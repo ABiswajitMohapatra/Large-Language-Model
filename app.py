@@ -77,19 +77,35 @@ if prompt:
 
     # Typing animation (live typing effect) with Stop button
     placeholder = st.empty()
-    stop_typing = st.button("⏹️ Stop")  # Stop button
     typed_text = ""
-    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
+        prompt, st.session_state.index, st.session_state.current_session
+    )
 
-    for char in final_answer:
-        if stop_typing:
-            typed_text += "..."  # indicate typing was stopped
+    # Streamlit session state for stop button
+    if 'stop_typing' not in st.session_state:
+        st.session_state.stop_typing = False
+
+    stop_button = st.button("⏹️ Stop ⚛️", key=f"stop_{len(st.session_state.current_session)}")
+    if stop_button:
+        st.session_state.stop_typing = True
+
+    for i, char in enumerate(final_answer):
+        if st.session_state.stop_typing:
+            # show remaining message immediately
+            typed_text = final_answer
             break
         typed_text += char
-        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
-        time.sleep(0.002)  # ultra-fast typing speed
+        placeholder.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>",
+            unsafe_allow_html=True
+        )
+        time.sleep(0.002)  # ultra-fast typing
 
-    add_message("Agent", typed_text if stop_typing else final_answer)
+    # Reset stop flag for next message
+    st.session_state.stop_typing = False
+    add_message("Agent", typed_text)
+    placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
