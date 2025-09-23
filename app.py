@@ -1,11 +1,9 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
-import uuid
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
 
-# --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
 if 'sessions' not in st.session_state:
@@ -24,7 +22,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo with animation and welcome text ---
+# --- Logo ---
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 10px;'>
@@ -33,10 +31,7 @@ st.markdown(
         <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
     </div>
     <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
+    @keyframes bounce {0%, 100% { transform: translateY(0); }50% { transform: translateY(-10px);}}
     </style>
     """,
     unsafe_allow_html=True
@@ -62,24 +57,24 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Display old messages first with copy button ---
+# --- Display old messages with copy button ---
 for msg in st.session_state.current_session:
     content = msg['message']
     if msg['role'] == "Agent":
-        uid = str(uuid.uuid4())
-        st.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{content}</b> "
-            f"<button onclick=\"navigator.clipboard.writeText('{content.replace('\'', '\\\'')}')\">📋</button></div>",
-            unsafe_allow_html=True
-        )
+        col1, col2 = st.columns([0.95, 0.05])
+        with col1:
+            st.markdown(f"⚛️ **{content}**", unsafe_allow_html=True)
+        with col2:
+            if st.button("📋", key=f"copy_{content}"):
+                st.clipboard_set(content)
     else:
-        st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{content}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"🧑‍🔬 **{content}**", unsafe_allow_html=True)
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...")
 if prompt:
     add_message("User", prompt)
-    st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
+    st.markdown(f"🧑‍🔬 **{prompt}**", unsafe_allow_html=True)
 
     placeholder = st.empty()
     typed_text = ""
@@ -88,24 +83,25 @@ if prompt:
     # Typing animation
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(f"⚛️ **{typed_text}**", unsafe_allow_html=True)
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
 
-    # Show copy button for the final agent message without touching typing logic
-    st.markdown(
-        f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{final_answer}</b> "
-        f"<button onclick=\"navigator.clipboard.writeText('{final_answer.replace('\'', '\\\'')}')\">📋</button></div>",
-        unsafe_allow_html=True
-    )
+    # Show copy button for the final message
+    col1, col2 = st.columns([0.95, 0.05])
+    with col1:
+        st.markdown(f"⚛️ **{final_answer}**", unsafe_allow_html=True)
+    with col2:
+        if st.button("📋", key=f"copy_final_{prompt}"):
+            st.clipboard_set(final_answer)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
-# --- Sidebar helper message ---
+# --- Sidebar helper ---
 st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
