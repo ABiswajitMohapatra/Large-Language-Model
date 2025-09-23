@@ -13,7 +13,7 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-st.sidebar.title("Chats")
+st.sidebar.title("Chats⚛️")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
@@ -64,7 +64,7 @@ def check_custom_response(user_input: str):
 # --- Display old messages first ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
@@ -91,6 +91,7 @@ if prompt:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
 
 
