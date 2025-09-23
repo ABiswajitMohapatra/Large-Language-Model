@@ -2,11 +2,16 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
 
-# --- Page config for home screen name and icon ---
-st.set_page_config(
-    page_title="BiswaLex",          # Name on home screen and browser tab
-    page_icon="https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg",
-    layout="wide"
+# --- Page config ---
+st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
+
+# --- Inject manifest for mobile home screen shortcut ---
+st.markdown(
+    """
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    """,
+    unsafe_allow_html=True
 )
 
 # --- Initialize index and sessions ---
@@ -18,7 +23,7 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-st.sidebar.title("Chats⚛️")
+st.sidebar.title("Chats⚛")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
@@ -69,7 +74,7 @@ def check_custom_response(user_input: str):
 # --- Display old messages first ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
@@ -85,7 +90,7 @@ if prompt:
 
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
