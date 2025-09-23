@@ -93,12 +93,24 @@ if prompt:
 
     custom_answer = check_custom_response(normalized_prompt)
     if custom_answer:
-        add_message("Agent", custom_answer)
+        answer = custom_answer
     else:
         answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-        add_message("Agent", answer)
 
     placeholder.empty()  # Remove typing indicator
+
+    # --- Live typing for Agent ---
+    typed_text = ""
+    agent_placeholder = st.empty()
+    for char in answer:
+        typed_text += char
+        agent_placeholder.markdown(
+            f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>",
+            unsafe_allow_html=True
+        )
+        time.sleep(0.02)
+
+    add_message("Agent", answer)
 
 # --- Display messages with scientific emojis, bold, and Markdown (clean) ---
 for msg in st.session_state.current_session:
