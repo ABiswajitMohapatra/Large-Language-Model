@@ -75,24 +75,23 @@ if prompt:
     add_message("User", prompt)
     st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
-    # Typing animation (live typing effect)
+    # Typing animation (live typing effect) with Stop button
     placeholder = st.empty()
+    stop_typing = st.button("⏹️ Stop")  # Stop button
     typed_text = ""
     final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
 
     for char in final_answer:
+        if stop_typing:
+            typed_text += "..."  # indicate typing was stopped
+            break
         typed_text += char
         placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
-        time.sleep(0.005)  # typing speed
+        time.sleep(0.002)  # ultra-fast typing speed
 
-    add_message("Agent", final_answer)
+    add_message("Agent", typed_text if stop_typing else final_answer)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
-
-
-
-
