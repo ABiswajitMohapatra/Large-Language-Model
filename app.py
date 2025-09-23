@@ -13,7 +13,7 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-st.sidebar.title("Chats⚛️")
+st.sidebar.title("Chats⚛")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
@@ -75,35 +75,19 @@ if prompt:
     add_message("User", prompt)
     st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
-    # Typing animation (live typing effect) with Stop button
+    # Typing animation (live typing effect)
     placeholder = st.empty()
     typed_text = ""
-    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
-        prompt, st.session_state.index, st.session_state.current_session
-    )
+    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
 
-    # Initialize stop flag
-    if 'stop_typing' not in st.session_state:
-        st.session_state.stop_typing = False
-
-    # Stop button
-    stop_button = st.button("⏹️", key=f"stop_{len(st.session_state.current_session)}")
-    if stop_button:
-        st.session_state.stop_typing = True
-
-    # Typing effect loop
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(
-            f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>",
-            unsafe_allow_html=True
-        )
-        time.sleep(0.002)
-        if st.session_state.stop_typing:
-            break  # immediately stop typing without printing the rest
+        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        time.sleep(0.002)  # typing speed
 
-    # Save whatever was typed so far
-    add_message("Agent", typed_text)
+    add_message("Agent", final_answer)
 
-    # Reset stop flag
-    st.session_state.stop_typing = False
+# --- Save session ---
+if st.sidebar.button("Save Session"):
+    if st.session_state.current_session not in st.session_state.sessions:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
