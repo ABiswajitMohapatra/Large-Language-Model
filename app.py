@@ -92,7 +92,7 @@ if prompt:
         unsafe_allow_html=True
     )
 
-    # Stop button (only appears while typing)
+    # Stop button
     stop_placeholder = st.empty()
     if stop_placeholder.button("⏹️ Stop", key="stop_button"):
         st.session_state.stop_flag = True
@@ -110,11 +110,15 @@ if prompt:
                 break
             full_response += token + " "
             time.sleep(0.05)  # simulate typing delay
-            response_placeholder.markdown(f"<i>{full_response}</i>", unsafe_allow_html=True)
+            response_placeholder.markdown(
+                f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{full_response}</b></div>",
+                unsafe_allow_html=True
+            )
 
         add_message("Agent", full_response.strip())
+        response_placeholder.empty()  # clear temp placeholder after done
 
-    # Reset stop state + clear placeholders
+    # Reset stop state + clear indicators
     st.session_state.stop_flag = False
     typing_placeholder.empty()
     stop_placeholder.empty()
