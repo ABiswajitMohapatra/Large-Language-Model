@@ -91,10 +91,13 @@ if prompt:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-# --- Sidebar helper message ---
+
+# --- Sidebar helper message directly under Save Session ---
 st.sidebar.markdown(
-    "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
+    "<p style='font-size:14px; color:gray; margin-top:5px;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
+
 
 
