@@ -1,6 +1,13 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import time
+import streamlit as st
+from model import load_documents, create_or_load_index, chat_with_agent
+import time
+
+st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
+
+# --- Inject manifest for mobile home screen shortcut ---
 st.markdown(
     """
     <link rel="manifest" href="manifest.json">
@@ -8,6 +15,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
@@ -95,4 +103,5 @@ if prompt:
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
 
