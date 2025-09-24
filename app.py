@@ -97,3 +97,9 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
+# --- Sidebar ---
+st.sidebar.title("Chats⚛️")
+
+# Upload icon button
+uploaded_file = st.sidebar.file_uploader("📤", label_visibility="collapsed")
