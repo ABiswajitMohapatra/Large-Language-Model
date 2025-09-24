@@ -97,3 +97,44 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+import PyPDF2
+
+# --- Sidebar ---
+st.sidebar.title("Chats⚛️")
+
+# Upload icon only
+uploaded_file = st.sidebar.file_uploader(
+    "", label_visibility="collapsed", type=["pdf"]
+)
+
+if uploaded_file:
+    # Add fake "user" message
+    add_message("User", "summery of my uploaded file")
+    st.markdown(
+        "<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>summery of my uploaded file</b></div>",
+        unsafe_allow_html=True
+    )
+
+    # Extract text from PDF
+    pdf_reader = PyPDF2.PdfReader(uploaded_file)
+    extracted_text = ""
+    for page in pdf_reader.pages:
+        extracted_text += page.extract_text() or ""
+
+    if extracted_text.strip():
+        # Summarize with your model
+        summary = chat_with_agent(
+            f"Please provide a summary of this document:\n\n{extracted_text}",
+            st.session_state.index,
+            st.session_state.current_session
+        )
+    else:
+        summary = "Sorry, no readable text was found in your PDF."
+
+    # Add Agent response (only once!)
+    add_message("Agent", summary)
+    st.markdown(
+        f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{summary}</b></div>",
+        unsafe_allow_html=True
+    )
+
