@@ -38,7 +38,7 @@ st.markdown("""
 <div style='text-align: center; margin-bottom: 10px;'>
     <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
          style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-    <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
+    <p style='font-size:20px; font-style:italic; color:#333;'>What's on the agenda today?😊</p>
 </div>
 <style>
 @keyframes bounce {0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px);}}
@@ -120,3 +120,4 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
