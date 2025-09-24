@@ -76,10 +76,15 @@ for msg in st.session_state.current_session:
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
+    # Show user message immediately
     add_message("User", prompt)
     st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
-    # Check if user is asking about PDF
+    # Typing animation (live typing effect)
+    placeholder = st.empty()
+    typed_text = ""
+
+    # --- Determine reply ---
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
        and "uploaded_pdf_text" in st.session_state:
 
@@ -91,14 +96,19 @@ if prompt:
             )
         else:
             final_answer = "⚛️ Sorry, no readable text was found in your PDF."
-
     else:
         final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
             prompt, st.session_state.index, st.session_state.current_session
         )
 
+    # --- Live typing animation ---
+    for char in final_answer:
+        typed_text += char
+        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        time.sleep(0.002)
+
+    # Save final message
     add_message("Agent", final_answer)
-    st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{final_answer}</b></div>", unsafe_allow_html=True)
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
