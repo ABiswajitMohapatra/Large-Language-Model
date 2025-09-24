@@ -1,5 +1,6 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
+import PyPDF2
 import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
@@ -23,23 +24,26 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Logo with animation and welcome text ---
-st.markdown(
-    """
-    <div style='text-align: center; margin-bottom: 10px;'>
-        <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-             style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-        <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
-    </div>
-    <style>
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# Upload icon only
+uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
+if uploaded_file and "uploaded_pdf_text" not in st.session_state:
+    pdf_reader = PyPDF2.PdfReader(uploaded_file)
+    extracted_text = ""
+    for page in pdf_reader.pages:
+        extracted_text += page.extract_text() or ""
+    st.session_state.uploaded_pdf_text = extracted_text.strip()
+
+# --- Logo ---
+st.markdown("""
+<div style='text-align: center; margin-bottom: 10px;'>
+    <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+         style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
+    <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
+</div>
+<style>
+@keyframes bounce {0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px);}}
+</style>
+""", unsafe_allow_html=True)
 
 # --- Message handler ---
 def add_message(role, message):
@@ -61,73 +65,21 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Display old messages first ---
+# --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Chat input ---
-prompt = st.chat_input("Say something...")
+# --- Chat input (ONLY ONE!) ---
+prompt = st.chat_input("Say something...", key="main_chat_input")
+
 if prompt:
-    # Show user message immediately
     add_message("User", prompt)
     st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
-    # Typing animation (live typing effect)
-    placeholder = st.empty()
-    typed_text = ""
-    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-
-    for char in final_answer:
-        typed_text += char
-        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
-        time.sleep(0.002)  # typing speed
-
-    add_message("Agent", final_answer)
-
-# --- Save session ---
-if st.sidebar.button("Save Session"):
-    if st.session_state.current_session not in st.session_state.sessions:
-        st.session_state.sessions.append(st.session_state.current_session.copy())
-
-# --- Sidebar helper ---
-st.sidebar.markdown(
-    "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
-    unsafe_allow_html=True
-)
-import PyPDF2
-
-# --- Sidebar ---
-st.sidebar.title("Chats⚛️")
-
-# Upload icon only
-uploaded_file = st.sidebar.file_uploader(
-    "", label_visibility="collapsed", type=["pdf"]
-)
-
-if uploaded_file and "uploaded_pdf_text" not in st.session_state:
-    # Extract text once and store silently
-    pdf_reader = PyPDF2.PdfReader(uploaded_file)
-    extracted_text = ""
-    for page in pdf_reader.pages:
-        extracted_text += page.extract_text() or ""
-    st.session_state.uploaded_pdf_text = extracted_text.strip()
-
-
-# --- Chat input (only once!) ---
-prompt = st.chat_input("Say something...")
-
-if prompt:
-    # Show user message
-    add_message("User", prompt)
-    st.markdown(
-        f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>",
-        unsafe_allow_html=True
-    )
-
-    # If user asks about PDF
+    # Check if user is asking about PDF
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
        and "uploaded_pdf_text" in st.session_state:
 
@@ -141,15 +93,20 @@ if prompt:
             final_answer = "⚛️ Sorry, no readable text was found in your PDF."
 
     else:
-        # Normal conversation
         final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
             prompt, st.session_state.index, st.session_state.current_session
         )
 
-    # Show Agent response
     add_message("Agent", final_answer)
-    st.markdown(
-        f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{final_answer}</b></div>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{final_answer}</b></div>", unsafe_allow_html=True)
 
+# --- Save session ---
+if st.sidebar.button("Save Session"):
+    if st.session_state.current_session not in st.session_state.sessions:
+        st.session_state.sessions.append(st.session_state.current_session.copy())
+
+# --- Sidebar helper ---
+st.sidebar.markdown(
+    "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
+    unsafe_allow_html=True
+)
