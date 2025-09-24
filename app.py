@@ -14,7 +14,7 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-st.sidebar.title("Chats⚛")
+st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛️")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
@@ -103,3 +103,4 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
