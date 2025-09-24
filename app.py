@@ -97,29 +97,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-# --- Sidebar ---
-st.sidebar.title("Chats⚛️")
-
-# Upload icon only
-uploaded_file = st.sidebar.file_uploader(
-    "", label_visibility="collapsed", type=["pdf", "txt", "docx"]
-)
-
-if uploaded_file:
-    # Fake "user message" for consistency
-    add_message("User", "summery of my uploaded file")
-    st.markdown(
-        "<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>summery of my uploaded file</b></div>",
-        unsafe_allow_html=True
-    )
-
-    # Process file content (very simple example, you can replace with load_documents)
-    file_content = uploaded_file.read().decode("utf-8", errors="ignore")
-    summary = file_content[:500] + "..." if len(file_content) > 500 else file_content  
-
-    # Show "Agent" response
-    add_message("Agent", summary)
-    st.markdown(
-        f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{summary}</b></div>",
-        unsafe_allow_html=True
-    )
