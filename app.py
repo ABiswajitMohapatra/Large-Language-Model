@@ -98,43 +98,45 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 import PyPDF2
-
-# --- Sidebar ---
-st.sidebar.title("Chats⚛️")
-
-# Upload icon only
 uploaded_file = st.sidebar.file_uploader(
     "", label_visibility="collapsed", type=["pdf"]
 )
 
-if uploaded_file:
-    # Add fake "user" message
-    add_message("User", "summery of my uploaded file")
-    st.markdown(
-        "<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>summery of my uploaded file</b></div>",
-        unsafe_allow_html=True
-    )
-
-    # Extract text from PDF
+if uploaded_file and "uploaded_pdf_text" not in st.session_state:
+    # Extract text from PDF once and store
     pdf_reader = PyPDF2.PdfReader(uploaded_file)
     extracted_text = ""
     for page in pdf_reader.pages:
         extracted_text += page.extract_text() or ""
-
-    if extracted_text.strip():
-        # Summarize with your model
-        summary = chat_with_agent(
-            f"Please provide a summary of this document:\n\n{extracted_text}",
-            st.session_state.index,
-            st.session_state.current_session
-        )
-    else:
-        summary = "Sorry, no readable text was found in your PDF."
-
-    # Add Agent response (only once!)
-    add_message("Agent", summary)
+    st.session_state.uploaded_pdf_text = extracted_text.strip()
+# --- Chat input ---
+prompt = st.chat_input("Say something...")
+if prompt:
+    add_message("User", prompt)
     st.markdown(
-        f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{summary}</b></div>",
+        f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>",
         unsafe_allow_html=True
     )
 
+    # Check if user is asking about PDF
+    if "pdf" in prompt.lower() and "uploaded_pdf_text" in st.session_state:
+        if st.session_state.uploaded_pdf_text:
+            final_answer = chat_with_agent(
+                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
+                st.session_state.index,
+                st.session_state.current_session
+            )
+        else:
+            final_answer = "⚛️ Sorry, no readable text was found in your PDF."
+    else:
+        # Normal conversation
+        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
+            prompt, st.session_state.index, st.session_state.current_session
+        )
+
+    # Show Agent message once
+    add_message("Agent", final_answer)
+    st.markdown(
+        f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{final_answer}</b></div>",
+        unsafe_allow_html=True
+    )
