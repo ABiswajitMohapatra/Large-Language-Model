@@ -19,7 +19,7 @@ st.markdown("""
 /* Reduce vertical spacing of messages */
 div.message {
     margin: 2px 0;
-    font-size: 28px;
+    font-size: 18px;
 }
 
 /* Adjust chat input block */
@@ -127,4 +127,5 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
