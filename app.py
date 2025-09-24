@@ -24,9 +24,10 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only
+# --- Sidebar PDF uploader (always update on new file) ---
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
-if uploaded_file and "uploaded_pdf_text" not in st.session_state:
+
+if uploaded_file:
     pdf_reader = PyPDF2.PdfReader(uploaded_file)
     extracted_text = ""
     for page in pdf_reader.pages:
