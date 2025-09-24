@@ -33,15 +33,42 @@ if uploaded_file and "uploaded_pdf_text" not in st.session_state:
         extracted_text += page.extract_text() or ""
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
-# --- Logo ---
+# --- Logo with light/dark support ---
 st.markdown("""
 <div style='text-align: center; margin-bottom: 10px;'>
-    <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
+    <img id='theme-img'
+         src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
          style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-    <p style='font-size:20px; font-style:italic; color:#333;'>What's on the agenda today?😊</p>
+    <p style='font-size:20px; font-style:italic; color:var(--text-color, #333);'>
+        What's on the agenda today?😊
+    </p>
 </div>
+
 <style>
-@keyframes bounce {0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px);}}
+/* Light mode */
+@media (prefers-color-scheme: light) {
+    #theme-img {
+        content: url("https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg");
+    }
+    :root {
+        --text-color: #333;
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    #theme-img {
+        content: url("https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/dark.jpg");
+    }
+    :root {
+        --text-color: #ddd;
+    }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px);}
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -120,4 +147,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
