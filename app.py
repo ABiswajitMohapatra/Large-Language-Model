@@ -3,7 +3,7 @@ from model import load_documents, create_or_load_index, chat_with_agent
 import PyPDF2
 import time
 
-st.set_page_config(page_title="BiswaLex", page_icon="⚛️", layout="wide")
+st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
@@ -14,7 +14,7 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-st.sidebar.title("Chats⚛️")
+st.sidebar.title("Chats⚛")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
@@ -24,10 +24,9 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- Sidebar PDF uploader (always update on new file) ---
+# Upload icon only
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
-
-if uploaded_file:
+if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     pdf_reader = PyPDF2.PdfReader(uploaded_file)
     extracted_text = ""
     for page in pdf_reader.pages:
@@ -69,7 +68,7 @@ def check_custom_response(user_input: str):
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
@@ -96,7 +95,7 @@ if prompt:
                 st.session_state.current_session
             )
         else:
-            final_answer = "⚛️ Sorry, no readable text was found in your PDF."
+            final_answer = "⚛ Sorry, no readable text was found in your PDF."
     else:
         final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
             prompt, st.session_state.index, st.session_state.current_session
@@ -105,7 +104,7 @@ if prompt:
     # --- Live typing animation ---
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛️ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
         time.sleep(0.002)
 
     # Save final message
