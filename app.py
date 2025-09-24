@@ -64,11 +64,13 @@ for msg in st.session_state.current_session:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
 # --- Text above chat input ---
+# --- Text above chat input ---
 st.markdown("""
-<div style='text-align:center; font-size:28px; font-weight:bold; color:#f1f1f1; margin-bottom:10px;'>
+<div style='text-align:center; font-size:28px; font-weight:bold; color:#e0e0e0; margin-bottom:10px;'>
     What can I help with😊
 </div>
 """, unsafe_allow_html=True)
+
 
 # --- Chat input (ONLY ONE!) ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
@@ -113,5 +115,6 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
 
