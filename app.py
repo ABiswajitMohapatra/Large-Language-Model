@@ -5,17 +5,15 @@ import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
-# --- Initialize index and sessions ---
-if 'index' not in st.session_state:
-    st.session_state.index = create_or_load_index()
-if 'sessions' not in st.session_state:
-    st.session_state.sessions = []
-if 'current_session' not in st.session_state:
-    st.session_state.current_session = []
-
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
+/* Reduce top and bottom padding of main container */
+.block-container {
+    padding-top: 5px;   /* minimized top space */
+    padding-bottom: 5px;
+}
+
 /* Reduce vertical spacing of messages */
 div.message {
     margin: 2px 0;
@@ -36,6 +34,14 @@ div[data-testid="stHorizontalBlock"] {
 }
 </style>
 """, unsafe_allow_html=True)
+
+# --- Initialize index and sessions ---
+if 'index' not in st.session_state:
+    st.session_state.index = create_or_load_index()
+if 'sessions' not in st.session_state:
+    st.session_state.sessions = []
+if 'current_session' not in st.session_state:
+    st.session_state.current_session = []
 
 # --- Sidebar ---
 st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
