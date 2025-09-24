@@ -13,6 +13,30 @@ if 'sessions' not in st.session_state:
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
+# --- Mobile-friendly CSS ---
+st.markdown("""
+<style>
+/* Reduce vertical spacing of messages */
+div.message {
+    margin: 2px 0;
+    font-size: 14px;
+}
+
+/* Adjust chat input block */
+div[data-testid="stHorizontalBlock"] {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+
+/* Optional: slightly smaller sidebar on mobile */
+@media only screen and (max-width: 600px) {
+    section[data-testid="stSidebar"] {
+        max-width: 250px;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
 # --- Sidebar ---
 st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
 if st.sidebar.button("New Chat"):
@@ -56,16 +80,16 @@ def check_custom_response(user_input: str):
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
-        st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Chat input (ONLY ONE!) ---
+# --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
     add_message("User", prompt)
-    st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
     placeholder = st.empty()
     typed_text = ""
@@ -88,7 +112,7 @@ if prompt:
 
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
