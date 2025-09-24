@@ -84,11 +84,15 @@ for msg in st.session_state.current_session:
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 # --- Text above chat input (sticky) ---
-st.markdown("""
-<div style='position:sticky; bottom:0; text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:5px; background-color:transparent; z-index:100;'>
-    What can I help with😊
-</div>
-""", unsafe_allow_html=True)
+# --- Static header above chat area ---
+if 'header_rendered' not in st.session_state:
+    st.markdown("""
+    <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
+        What can I help with😊
+    </div>
+    """, unsafe_allow_html=True)
+    st.session_state.header_rendered = True
+
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
@@ -133,6 +137,7 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
 
 
