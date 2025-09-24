@@ -14,10 +14,7 @@ if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
 # --- Sidebar ---
-st.sidebar.markdown(
-    "<h2 style='margin-bottom:10px;'>B͎i͎s͎w͎a͎L͎e͎x͎⚛️</h2>",
-    unsafe_allow_html=True
-)
+st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
@@ -63,15 +60,6 @@ for msg in st.session_state.current_session:
     else:
         st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Text above chat input ---
-# --- Text above chat input ---
-st.markdown("""
-<div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:10px;'>
-    What can I help with😊
-</div>
-""", unsafe_allow_html=True)
-
-
 # --- Chat input (ONLY ONE!) ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
@@ -115,7 +103,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
-
-
-
