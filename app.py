@@ -66,7 +66,7 @@ for msg in st.session_state.current_session:
 # --- Text above chat input ---
 # --- Text above chat input ---
 st.markdown("""
-<div style='text-align:center; font-size:28px; font-weight:bold; color:#e0e0e0; margin-bottom:10px;'>
+<div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:10px;'>
     What can I help with😊
 </div>
 """, unsafe_allow_html=True)
@@ -115,6 +115,7 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
 
 
