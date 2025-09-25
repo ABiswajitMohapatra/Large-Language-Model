@@ -2,8 +2,9 @@ streamlit
 groq
 langchain
 faiss-cpu
-pypdf
-llama-index
+PyPDF2
+python-docx
+python-pptx
 python-dotenv
 pillow
 pytesseract
