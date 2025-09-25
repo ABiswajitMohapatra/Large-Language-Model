@@ -13,8 +13,32 @@ if 'sessions' not in st.session_state:
 if 'current_session' not in st.session_state:
     st.session_state.current_session = []
 
+# --- Mobile-friendly CSS ---
+st.markdown("""
+<style>
+/* Reduce vertical spacing of messages */
+div.message {
+    margin: 2px 0;
+    font-size: 17px;
+}
+
+/* Adjust chat input block */
+div[data-testid="stHorizontalBlock"] {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+
+/* Optional: slightly smaller sidebar on mobile */
+@media only screen and (max-width: 600px) {
+    section[data-testid="stSidebar"] {
+        max-width: 250px;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
 # --- Sidebar ---
-st.sidebar.title("Chats⚛")
+st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
 if st.sidebar.button("Clear Chat"):
@@ -32,18 +56,6 @@ if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     for page in pdf_reader.pages:
         extracted_text += page.extract_text() or ""
     st.session_state.uploaded_pdf_text = extracted_text.strip()
-
-# --- Logo ---
-st.markdown("""
-<div style='text-align: center; margin-bottom: 10px;'>
-    <img src='https://raw.githubusercontent.com/ABiswajitMohapatra/Large-Language-Model/main/logo.jpg'
-         style='width: 100%; max-width: 350px; height: auto; animation: bounce 1s infinite;'>
-    <p style='font-size:20px; font-style:italic; color:#333;'>How can i help with!😊</p>
-</div>
-<style>
-@keyframes bounce {0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px);}}
-</style>
-""", unsafe_allow_html=True)
 
 # --- Message handler ---
 def add_message(role, message):
@@ -68,23 +80,30 @@ def check_custom_response(user_input: str):
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
-        st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+# --- Text above chat input (sticky) ---
+# --- Static header above chat area ---
+if 'header_rendered' not in st.session_state:
+    st.markdown("""
+    <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
+        What can I help with😊
+    </div>
+    """, unsafe_allow_html=True)
+    st.session_state.header_rendered = True
 
-# --- Chat input (ONLY ONE!) ---
+
+# --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
-    # Show user message immediately
     add_message("User", prompt)
-    st.markdown(f"<div style='text-align:right; margin:5px 0;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
-    # Typing animation (live typing effect)
     placeholder = st.empty()
     typed_text = ""
 
-    # --- Determine reply ---
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
        and "uploaded_pdf_text" in st.session_state:
 
@@ -101,13 +120,11 @@ if prompt:
             prompt, st.session_state.index, st.session_state.current_session
         )
 
-    # --- Live typing animation ---
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div style='text-align:left; margin:5px 0;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
         time.sleep(0.002)
 
-    # Save final message
     add_message("Agent", final_answer)
 
 # --- Save session ---
