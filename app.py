@@ -49,7 +49,7 @@ for i, sess in enumerate(st.session_state.sessions):
         st.session_state.current_session = sess.copy()
 
 # Upload icon only
-uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf","jpg","png","doc"])
+uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     pdf_reader = PyPDF2.PdfReader(uploaded_file)
     extracted_text = ""
@@ -137,4 +137,5 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
