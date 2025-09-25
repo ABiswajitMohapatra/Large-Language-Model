@@ -48,14 +48,19 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only
-uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
+# Upload icon only (PDF, Image, DOC, PPT)
+uploaded_file = st.sidebar.file_uploader(
+    "", 
+    label_visibility="collapsed", 
+    type=["pdf", "jpg", "jpeg", "png", "doc", "docx", "ppt", "pptx"]
+)
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
-    pdf_reader = PyPDF2.PdfReader(uploaded_file)
-    extracted_text = ""
-    for page in pdf_reader.pages:
-        extracted_text += page.extract_text() or ""
-    st.session_state.uploaded_pdf_text = extracted_text.strip()
+    if uploaded_file.type == "application/pdf":
+        pdf_reader = PyPDF2.PdfReader(uploaded_file)
+        extracted_text = ""
+        for page in pdf_reader.pages:
+            extracted_text += page.extract_text() or ""
+        st.session_state.uploaded_pdf_text = extracted_text.strip()
 
 # --- Message handler ---
 def add_message(role, message):
@@ -137,5 +142,6 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
 
