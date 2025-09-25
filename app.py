@@ -48,10 +48,9 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only (PDF, Image, DOC, PPT)
 uploaded_file = st.sidebar.file_uploader(
-    "", 
-    label_visibility="collapsed", 
+    "Upload a file",
+    label_visibility="collapsed",
     type=["pdf", "jpg", "jpeg", "png", "doc", "docx", "ppt", "pptx"]
 )
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
@@ -142,6 +141,7 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
 
 
