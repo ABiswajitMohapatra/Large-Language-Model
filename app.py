@@ -1,6 +1,5 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
-import PyPDF2
 import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
@@ -16,24 +15,9 @@ if 'current_session' not in st.session_state:
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
-/* Reduce vertical spacing of messages */
-div.message {
-    margin: 2px 0;
-    font-size: 17px;
-}
-
-/* Adjust chat input block */
-div[data-testid="stHorizontalBlock"] {
-    margin-bottom: 0px;
-    padding-bottom: 0px;
-}
-
-/* Optional: slightly smaller sidebar on mobile */
-@media only screen and (max-width: 600px) {
-    section[data-testid="stSidebar"] {
-        max-width: 250px;
-    }
-}
+div.message { margin: 2px 0; font-size: 17px; }
+div[data-testid="stHorizontalBlock"] { margin-bottom: 0px; padding-bottom: 0px; }
+@media only screen and (max-width: 600px) { section[data-testid="stSidebar"] { max-width: 250px; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,13 +32,59 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only
-uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf", "jpg", "jpeg", "png", "doc", "docx", "ppt", "pptx"])
+# --- File uploader ---
+uploaded_file = st.sidebar.file_uploader(
+    "", label_visibility="collapsed",
+    type=["pdf", "jpg", "jpeg", "png", "doc", "docx", "ppt", "pptx"]
+)
+
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
-    pdf_reader = PyPDF2.PdfReader(uploaded_file)
     extracted_text = ""
-    for page in pdf_reader.pages:
-        extracted_text += page.extract_text() or ""
+
+    # PDF
+    if uploaded_file.type == "application/pdf":
+        import PyPDF2
+        try:
+            pdf_reader = PyPDF2.PdfReader(uploaded_file)
+            for page in pdf_reader.pages:
+                extracted_text += page.extract_text() or ""
+        except PyPDF2.errors.PdfReadError:
+            try:
+                import pdfplumber
+                with pdfplumber.open(uploaded_file) as pdf:
+                    for page in pdf.pages:
+                        extracted_text += page.extract_text() or ""
+            except Exception:
+                st.warning("⚛️ Could not read the uploaded PDF.")
+
+    # DOC/DOCX
+    elif uploaded_file.type in [
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword"
+    ]:
+        from docx import Document
+        doc = Document(uploaded_file)
+        extracted_text = "\n".join([p.text for p in doc.paragraphs])
+
+    # PPT/PPTX
+    elif uploaded_file.type in [
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.ms-powerpoint"
+    ]:
+        from pptx import Presentation
+        prs = Presentation(uploaded_file)
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    extracted_text += shape.text + "\n"
+
+    # Images
+    elif uploaded_file.type.startswith("image/"):
+        from PIL import Image
+        import pytesseract
+        img = Image.open(uploaded_file)
+        extracted_text = pytesseract.image_to_string(img)
+
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
 # --- Message handler ---
@@ -83,7 +113,7 @@ for msg in st.session_state.current_session:
         st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
-# --- Text above chat input (sticky) ---
+
 # --- Static header above chat area ---
 if 'header_rendered' not in st.session_state:
     st.markdown("""
@@ -92,7 +122,6 @@ if 'header_rendered' not in st.session_state:
     </div>
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
-
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
@@ -114,7 +143,7 @@ if prompt:
                 st.session_state.current_session
             )
         else:
-            final_answer = "⚛ Sorry, no readable text was found in your PDF."
+            final_answer = "⚛ Sorry, no readable text was found in your file."
     else:
         final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
             prompt, st.session_state.index, st.session_state.current_session
@@ -137,4 +166,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
