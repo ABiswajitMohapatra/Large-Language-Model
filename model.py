@@ -95,7 +95,11 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context."
+        "Answer the user's last query in context.\n"
+        "Format the answer clearly using:\n"
+        "- Bullet points for lists\n"
+        "- Tables if comparison is needed (use Markdown table syntax)\n"
+        "- Highlight keywords using **bold** text\n"
     )
     return query_groq_api(prompt)
 
@@ -109,4 +113,5 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
 
