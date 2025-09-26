@@ -117,11 +117,10 @@ if prompt:
 
     # --- Render structured Markdown with typing effect ---
     typed_text = ""
-    for line in final_answer.split("\n"):
-        typed_text += line + "\n"
-        placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
-        time.sleep(0.01)
-
+for line in final_answer.split("\n"):  # preserve tables, bullets, etc.
+    typed_text += line + "\n"
+    placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
+    time.sleep(0.05)  # 50ms per line for live typing effect
     add_message("Agent", final_answer)
 
 # --- Save session ---
@@ -134,4 +133,5 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
