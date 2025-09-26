@@ -79,6 +79,13 @@ def rag_retrieve(query: str) -> list[str]:
 
 # --- Chat with Agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
+    # --- Quick check for greetings or very short queries ---
+    short_inputs = ["hi", "hello", "hey", "hola", "who are you", "your name", "what's up"]
+    if query.strip().lower() in short_inputs or len(query.split()) <= 3:
+        # Natural short reply, no forced formatting
+        return query_groq_api(f"The user said: '{query}'. Respond naturally in 1–2 short friendly lines.")
+
+    # --- Retrieve context from documents ---
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
@@ -90,7 +97,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     rag_context = "\n".join(rag_results)
     full_context = context + "\n" + rag_context if rag_context else context
 
-    # Conversation memory handling
+    # --- Conversation memory handling ---
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
@@ -104,23 +111,20 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- Enhanced prompt for better formatting ---
+    # --- Enhanced structured response for real queries ---
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in **well-structured format** with:\n"
-        "- ✅ **Bulleted points** for clarity\n"
-        "- 📊 **Tables** when comparing data\n"
-        "- 🔑 Highlight **important keywords** in **bold** or *italic*\n"
-        "- 📝 Provide **clear analysis and explanations**\n"
-        "If relevant, use markdown tables like this:\n"
-        "| Algorithm   | Best Case | Average Case | Worst Case | Stable |\n"
-        "|------------ |-----------|--------------|----------- |--------|\n"
-        "| Merge Sort  | O(n log n)| O(n log n)   | O(n log n) | ✅ Yes |\n"
-        "| Quick Sort  | O(n log n)| O(n log n)   | O(n²)      | ❌ No |\n"
+        "Answer the user's last query in context.\n\n"
+        "Make sure your response is well-structured with:\n"
+        "- Bulleted lists for key points\n"
+        "- Tables for comparisons (if applicable)\n"
+        "- **Bold** or *italic* for highlighting important terms\n"
+        "- Clear and concise analysis"
     )
 
     return query_groq_api(prompt)
+
 
 # --- Extract Text from PDF ---
 def extract_text_from_pdf(file):
@@ -134,3 +138,4 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
