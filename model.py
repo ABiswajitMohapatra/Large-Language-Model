@@ -85,8 +85,7 @@ def rag_retrieve(query: str) -> list[str]:
     return []
 
 
-# --- Chat with Agent ---
-def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
+def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content="", formatting=True):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
@@ -98,7 +97,6 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     rag_context = "\n".join(rag_results)
     full_context = context + "\n" + rag_context if rag_context else context
 
-    # Conversation memory handling
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
@@ -118,7 +116,16 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         "Answer the user's last query in context."
     )
 
+    if formatting:
+        prompt += (
+            "\n\n⚠ Formatting rules:\n"
+            "- Start with a main heading using Markdown (# Heading) – slightly larger than ##.\n"
+            "- Use **bold sub-headings** (### Sub-heading) – slightly larger than normal bold.\n"
+            "- Use • bullet points, each on a new line.\n"
+        )
+
     return query_groq_api(prompt)
+
 
 
 # --- Extract Text from PDF ---
@@ -134,3 +141,4 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
