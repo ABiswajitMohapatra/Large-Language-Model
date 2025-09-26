@@ -1,4 +1,3 @@
-# model.py
 import os
 import pickle
 from groq import Groq
@@ -9,7 +8,6 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 import pdfplumber
 from PIL import Image
 import pytesseract
-import time
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
@@ -66,16 +64,19 @@ def summarize_messages(messages):
     return query_groq_api(prompt)
 
 def rag_retrieve(query: str) -> list[str]:
+    # Optionally implement RAG if needed
     return []
-
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
+
     if extra_file_content:
-        context += f"\nAdditional context from uploaded files:\n{extra_file_content}"
+        context += f"\nAdditional context from uploaded file:\n{extra_file_content}"
+
     rag_results = rag_retrieve(query)
     rag_context = "\n".join(rag_results)
+
     full_context = context + "\n" + rag_context if rag_context else context
 
     if len(chat_history) > memory_limit:
@@ -90,6 +91,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
+    # ✅ Structured-answer prompt
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
@@ -103,6 +105,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     )
     return query_groq_api(prompt)
 
+
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -113,3 +116,5 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
+
