@@ -70,10 +70,15 @@ def rag_retrieve(query: str) -> list[str]:
 def is_simple_query(query: str):
     SIMPLE_QUERIES = [
         "full form", "meaning of", "define", "abbreviation of", "what is",
-        "who is", "when was", "where is", "how many"
+        "who is", "when was", "where is", "how many", "capital of", "president of"
     ]
     normalized = query.lower()
     return any(keyword in normalized for keyword in SIMPLE_QUERIES)
+
+def is_translation_query(query: str):
+    TRANSLATION_KEYWORDS = ["translate", "translation", "into hindi", "in hindi"]
+    normalized = query.lower()
+    return any(keyword in normalized for keyword in TRANSLATION_KEYWORDS)
 
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
@@ -100,7 +105,9 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    if is_simple_query(query):
+    if is_translation_query(query):
+        prompt_text = f"Translate the following text into Hindi, but write it in English script: {query}"
+    elif is_simple_query(query):
         prompt_text = f"{full_context}\nConversation:\n{conversation_text}\nAnswer concisely:"
     else:
         prompt_text = (
