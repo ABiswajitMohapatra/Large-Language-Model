@@ -119,18 +119,16 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         )
     else:
         # --- Formatted answers with proper headings ---
-        prompt = (
+          prompt = (
             f"Context from documents and files: {full_context}\n"
             f"Conversation so far:\n{conversation_text}\n"
             "Answer the user's last query in context.\n\n"
             "⚠ Formatting rules:\n"
-            "- Start with a main heading using Markdown (## Heading) – slightly smaller than #.\n"
+            "- Start with a main heading using Markdown (## Heading).\n"
             "- Use **bold sub-headings** for sections, each on a new line.\n"
-            "- Use • bullet points with each point starting on a new line.\n"
-            "- Ensure no multiple items are on the same line.\n"
-            "- Use tables if making a comparison.\n"
-            "- Use **bold** and *italic* for emphasis.\n"
-        )
+            "- Use • bullet points, each on a new line.\n"
+          )
+
 
     return query_groq_api(prompt)
 
@@ -148,3 +146,4 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
