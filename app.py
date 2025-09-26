@@ -1,6 +1,6 @@
 import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
-import PyPDF2
+import pdfplumber
 import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
@@ -51,10 +51,10 @@ for i, sess in enumerate(st.session_state.sessions):
 # Upload icon only
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
-    pdf_reader = PyPDF2.PdfReader(uploaded_file)
     extracted_text = ""
-    for page in pdf_reader.pages:
-        extracted_text += page.extract_text() or ""
+    with pdfplumber.open(uploaded_file) as pdf:
+        for page in pdf.pages:
+            extracted_text += page.extract_text() or ""
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
 # --- Message handler ---
@@ -83,7 +83,7 @@ for msg in st.session_state.current_session:
         st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
-# --- Text above chat input (sticky) ---
+
 # --- Static header above chat area ---
 if 'header_rendered' not in st.session_state:
     st.markdown("""
@@ -92,7 +92,6 @@ if 'header_rendered' not in st.session_state:
     </div>
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
-
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
