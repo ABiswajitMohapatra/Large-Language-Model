@@ -16,14 +16,19 @@ if 'current_session' not in st.session_state:
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
+/* Reduce vertical spacing of messages */
 div.message {
     margin: 2px 0;
     font-size: 17px;
 }
+
+/* Adjust chat input block */
 div[data-testid="stHorizontalBlock"] {
     margin-bottom: 0px;
     padding-bottom: 0px;
 }
+
+/* Optional: slightly smaller sidebar on mobile */
 @media only screen and (max-width: 600px) {
     section[data-testid="stSidebar"] {
         max-width: 250px;
@@ -43,7 +48,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# --- PDF upload ---
+# Upload icon only
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     extracted_text = ""
@@ -75,9 +80,9 @@ def check_custom_response(user_input: str):
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div class='message' style='text-align:left;'>⚛ {msg['message']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
-        st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 {msg['message']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
 # --- Static header above chat area ---
 if 'header_rendered' not in st.session_state:
@@ -93,33 +98,31 @@ prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
     add_message("User", prompt)
-    st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 {prompt}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
 
     placeholder = st.empty()
-    final_answer = check_custom_response(prompt.lower())
-
-    # --- PDF / Document processing if no custom response ---
-    if not final_answer:
-        if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
-           and "uploaded_pdf_text" in st.session_state:
-
-            if st.session_state.uploaded_pdf_text:
-                final_answer = chat_with_agent(
-                    f"Please provide a structured summary of this document (use bullets, tables, bold where needed):\n\n{st.session_state.uploaded_pdf_text}",
-                    st.session_state.index,
-                    st.session_state.current_session
-                )
-            else:
-                final_answer = "⚛ Sorry, no readable text was found in your PDF."
-        else:
-            final_answer = chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
-
-    # --- Live typing with Markdown support ---
     typed_text = ""
+
+    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
+       and "uploaded_pdf_text" in st.session_state:
+
+        if st.session_state.uploaded_pdf_text:
+            final_answer = chat_with_agent(
+                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
+                st.session_state.index,
+                st.session_state.current_session
+            )
+        else:
+            final_answer = "⚛ Sorry, no readable text was found in your PDF."
+    else:
+        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
+            prompt, st.session_state.index, st.session_state.current_session
+        )
+
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
-        time.sleep(0.001)
+        placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        time.sleep(0.002)
 
     add_message("Agent", final_answer)
 
