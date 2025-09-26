@@ -8,6 +8,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 import pdfplumber
 from PIL import Image
 import pytesseract
+import time
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
@@ -116,5 +117,6 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
 
 
