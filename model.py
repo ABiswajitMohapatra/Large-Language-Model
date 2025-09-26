@@ -41,12 +41,20 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
-def query_groq_api(prompt: str):
-    chat_completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return chat_completion.choices[0].message.content
+def query_groq_api(prompt: str, retries=3, delay=2):
+    for attempt in range(retries):
+        try:
+            chat_completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            if attempt < retries - 1:
+                time.sleep(delay)
+                continue
+            else:
+                return f"⚛ Sorry, Groq API failed: {str(e)}"
 
 def summarize_messages(messages):
     text = ""
@@ -101,3 +109,4 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
