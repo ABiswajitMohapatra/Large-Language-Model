@@ -72,6 +72,16 @@ def check_custom_response(user_input: str):
             return response
     return None
 
+# --- Greetings handler ---
+GREETINGS = ["hi", "hello", "hey", "good morning", "good evening", "good afternoon"]
+
+def check_greeting(user_input: str):
+    normalized = user_input.lower().strip()
+    for greet in GREETINGS:
+        if greet in normalized:
+            return f"{greet.capitalize()}! 😊"
+    return None
+
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
@@ -98,29 +108,33 @@ if prompt:
     placeholder = st.empty()
     final_answer = ""
 
-    # --- PDF / Document processing ---
-    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
-       and "uploaded_pdf_text" in st.session_state:
+    # --- Short greeting / custom responses first ---
+    final_answer = check_greeting(prompt) or check_custom_response(prompt.lower())
 
-        if st.session_state.uploaded_pdf_text:
-            final_answer = chat_with_agent(
-                f"Please provide a structured summary of this document (use bullets, tables, bold where needed):\n\n{st.session_state.uploaded_pdf_text}",
-                st.session_state.index,
-                st.session_state.current_session
-            )
+    # --- Only call LLM if no greeting / custom response ---
+    if not final_answer:
+        if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
+           and "uploaded_pdf_text" in st.session_state:
+
+            if st.session_state.uploaded_pdf_text:
+                final_answer = chat_with_agent(
+                    f"Please provide a structured summary of this document (use bullets, tables, bold where needed):\n\n{st.session_state.uploaded_pdf_text}",
+                    st.session_state.index,
+                    st.session_state.current_session
+                )
+            else:
+                final_answer = "⚛ Sorry, no readable text was found in your PDF."
         else:
-            final_answer = "⚛ Sorry, no readable text was found in your PDF."
-    else:
-        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
-            prompt, st.session_state.index, st.session_state.current_session
-        )
+            final_answer = chat_with_agent(
+                prompt, st.session_state.index, st.session_state.current_session
+            )
 
-    # --- Live typing with Markdown support ---
+    # --- Live typing effect ---
     typed_text = ""
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
-        time.sleep(0.002)  # slower typing for visible effect
+        time.sleep(0.001)  # slower for better visible typing effect
 
     add_message("Agent", final_answer)
 
@@ -134,4 +148,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
