@@ -5,7 +5,7 @@ from llama_index.core.schema import TextNode
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
-import PyPDF2
+import pdfplumber
 from PIL import Image
 import pytesseract
 
@@ -92,11 +92,11 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     return query_groq_api(prompt)
 
 def extract_text_from_pdf(file):
-    reader = PyPDF2.PdfReader(file)
     text = ""
-    for page in reader.pages:
-        text += page.extract_text()
-    return text
+    with pdfplumber.open(file) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
+    return text.strip()
 
 def extract_text_from_image(file):
     image = Image.open(file)
