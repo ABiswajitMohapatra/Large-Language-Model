@@ -12,3 +12,4 @@ easyocr
 firebase-admin
 supabase
 numpy
+PyPDF2
