@@ -14,6 +14,7 @@ import pytesseract
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
+
 # --- Custom Embedding ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
@@ -25,14 +26,16 @@ class CustomEmbedding(BaseEmbedding):
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
+
 # --- Load Documents ---
 def load_documents():
     folder = "Sanjukta"
     if os.path.exists(folder):
         return SimpleDirectoryReader(folder).load_data()
     else:
-        print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
+        print(f"⚠ Folder '{folder}' not found. Continuing with empty documents.")
         return []
+
 
 # --- Create or Load Index ---
 def create_or_load_index():
@@ -47,6 +50,7 @@ def create_or_load_index():
         with open(index_file, "wb") as f:
             pickle.dump(index, f)
     return index
+
 
 # --- Query Groq API ---
 def query_groq_api(prompt: str, retries=3, delay=2):
@@ -64,6 +68,7 @@ def query_groq_api(prompt: str, retries=3, delay=2):
             else:
                 return f"⚛ Sorry, Groq API failed: {str(e)}"
 
+
 # --- Summarize Messages ---
 def summarize_messages(messages):
     text = ""
@@ -73,19 +78,15 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
+
 # --- (Optional) RAG Retrieve ---
 def rag_retrieve(query: str) -> list[str]:
+    # Optionally implement RAG if needed
     return []
+
 
 # --- Chat with Agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
-    # --- Quick check for greetings or very short queries ---
-    short_inputs = ["hi", "hello", "hey", "hola", "who are you", "your name", "what's up"]
-    if query.strip().lower() in short_inputs or len(query.split()) <= 3:
-        # Natural short reply, no forced formatting
-        return query_groq_api(f"The user said: '{query}'. Respond naturally in 1–2 short friendly lines.")
-
-    # --- Retrieve context from documents ---
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
@@ -97,7 +98,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     rag_context = "\n".join(rag_results)
     full_context = context + "\n" + rag_context if rag_context else context
 
-    # --- Conversation memory handling ---
+    # Conversation memory handling
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
@@ -111,16 +112,10 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- Enhanced structured response for real queries ---
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context.\n\n"
-        "Make sure your response is well-structured with:\n"
-        "- Bulleted lists for key points\n"
-        "- Tables for comparisons (if applicable)\n"
-        "- **Bold** or *italic* for highlighting important terms\n"
-        "- Clear and concise analysis"
+        "Answer the user's last query in context."
     )
 
     return query_groq_api(prompt)
@@ -134,8 +129,8 @@ def extract_text_from_pdf(file):
             text += page.extract_text() or ""
     return text.strip()
 
+
 # --- Extract Text from Image ---
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
-
