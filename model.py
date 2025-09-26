@@ -118,22 +118,21 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
             "Reply naturally to the user's greeting without extra formatting."
         )
     else:
-        # --- Formatted answers with headings ---
-       # --- Formatted answers with headings ---
-prompt = (
-    f"Context from documents and files: {full_context}\n"
-    f"Conversation so far:\n{conversation_text}\n"
-    "Answer the user's last query in context.\n\n"
-    "⚠ Formatting rules:\n"
-    "- Start with a main heading using Markdown (## Heading) – slightly smaller than #.\n"
-    "- Use **bold sub-headings** for sections, each on a new line.\n"
-    "- Use • bullet points with each point starting on a new line.\n"
-    "- Ensure no multiple items are on the same line.\n"
-    "- Use tables if making a comparison.\n"
-    "- Use **bold** and *italic* for emphasis.\n"
-)
-    return query_groq_api(prompt)
+        # --- Formatted answers with proper headings ---
+        prompt = (
+            f"Context from documents and files: {full_context}\n"
+            f"Conversation so far:\n{conversation_text}\n"
+            "Answer the user's last query in context.\n\n"
+            "⚠ Formatting rules:\n"
+            "- Start with a main heading using Markdown (## Heading) – slightly smaller than #.\n"
+            "- Use **bold sub-headings** for sections, each on a new line.\n"
+            "- Use • bullet points with each point starting on a new line.\n"
+            "- Ensure no multiple items are on the same line.\n"
+            "- Use tables if making a comparison.\n"
+            "- Use **bold** and *italic* for emphasis.\n"
+        )
 
+    return query_groq_api(prompt)
 
 
 # --- Extract Text from PDF ---
@@ -149,5 +148,3 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
-
-
