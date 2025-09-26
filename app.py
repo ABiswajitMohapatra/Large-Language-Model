@@ -98,7 +98,9 @@ if prompt:
     placeholder = st.empty()
     typed_text = ""
 
-    # --- Check PDF summary context ---
+    # --- Ensure final_answer is always defined ---
+    final_answer = ""
+
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
        and "uploaded_pdf_text" in st.session_state:
 
@@ -115,12 +117,13 @@ if prompt:
             prompt, st.session_state.index, st.session_state.current_session
         )
 
-    # --- Render structured Markdown with typing effect ---
+    # --- Live typing effect, line by line (Markdown-friendly) ---
     typed_text = ""
-for line in final_answer.split("\n"):  # preserve tables, bullets, etc.
-    typed_text += line + "\n"
-    placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
-    time.sleep(0.05)  # 50ms per line for live typing effect
+    for line in final_answer.split("\n"):
+        typed_text += line + "\n"
+        placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
+        time.sleep(0.05)  # Adjust 0.05 for slower/faster typing
+
     add_message("Agent", final_answer)
 
 # --- Save session ---
@@ -133,5 +136,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
-
