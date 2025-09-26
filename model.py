@@ -1,6 +1,7 @@
 import os
 import pickle
 from groq import Groq
+from groq.exceptions import RateLimitError
 from llama_index.core.schema import TextNode
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.base.base_retriever import BaseRetriever
@@ -42,11 +43,16 @@ def create_or_load_index():
     return index
 
 def query_groq_api(prompt: str):
-    chat_completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return chat_completion.choices[0].message.content
+    try:
+        chat_completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return chat_completion.choices[0].message.content
+    except RateLimitError:
+        return "⚛ Sorry, the API rate limit has been reached. Please try again in a few moments."
+    except Exception as e:
+        return f"⚛ An unexpected error occurred: {str(e)}"
 
 def summarize_messages(messages):
     text = ""
@@ -56,7 +62,6 @@ def summarize_messages(messages):
     return query_groq_api(prompt)
 
 def rag_retrieve(query: str) -> list[str]:
-    # Optionally implement RAG if needed
     return []
 
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
