@@ -96,17 +96,15 @@ if prompt:
     st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 {prompt}</div>", unsafe_allow_html=True)
 
     placeholder = st.empty()
-    typed_text = ""
-
-    # --- Ensure final_answer is always defined ---
     final_answer = ""
 
+    # --- PDF / Document processing ---
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
        and "uploaded_pdf_text" in st.session_state:
 
         if st.session_state.uploaded_pdf_text:
             final_answer = chat_with_agent(
-                f"Please provide a structured summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
+                f"Please provide a structured summary of this document (use bullets, tables, bold where needed):\n\n{st.session_state.uploaded_pdf_text}",
                 st.session_state.index,
                 st.session_state.current_session
             )
@@ -117,12 +115,12 @@ if prompt:
             prompt, st.session_state.index, st.session_state.current_session
         )
 
-    # --- Live typing effect, line by line (Markdown-friendly) ---
+    # --- Live typing with Markdown support ---
     typed_text = ""
-    for line in final_answer.split("\n"):
-        typed_text += line + "\n"
+    for char in final_answer:
+        typed_text += char
         placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
-        time.sleep(0.01)  # Adjust 0.05 for slower/faster typing
+        time.sleep(0.03)  # slower typing for visible effect
 
     add_message("Agent", final_answer)
 
@@ -136,6 +134,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
-
-
