@@ -1,6 +1,5 @@
 import os
 import pickle
-import time
 from groq import Groq
 from llama_index.core.schema import TextNode
 from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -10,24 +9,17 @@ import pdfplumber
 from PIL import Image
 import pytesseract
 
-# --- Groq API Setup ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
-
-# --- Custom Embedding ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
-
     async def _aget_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
-
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
-
-# --- Load Documents ---
 def load_documents():
     folder = "Sanjukta"
     if os.path.exists(folder):
@@ -36,8 +28,6 @@ def load_documents():
         print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
         return []
 
-
-# --- Create or Load Index ---
 def create_or_load_index():
     index_file = "index.pkl"
     if os.path.exists(index_file):
@@ -51,41 +41,24 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
+def query_groq_api(prompt: str):
+    chat_completion = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return chat_completion.choices[0].message.content
 
-# --- Query Groq API ---
-def query_groq_api(prompt: str, retries=3, delay=2):
-    for attempt in range(retries):
-        try:
-            chat_completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return chat_completion.choices[0].message.content
-        except Exception as e:
-            if attempt < retries - 1:
-                time.sleep(delay)
-                continue
-            else:
-                return f"⚛ Sorry, Groq API failed: {str(e)}"
-
-
-# --- Summarize Messages ---
 def summarize_messages(messages):
     text = ""
     for msg in messages:
         text += f"{msg['role']}: {msg['message']}\n"
-
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
-
-# --- (Optional) RAG Retrieve ---
 def rag_retrieve(query: str) -> list[str]:
     # Optionally implement RAG if needed
     return []
 
-
-# --- Chat with Agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -96,9 +69,9 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
 
     rag_results = rag_retrieve(query)
     rag_context = "\n".join(rag_results)
+
     full_context = context + "\n" + rag_context if rag_context else context
 
-    # Conversation memory handling
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
@@ -107,7 +80,6 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     else:
         recent_messages = chat_history
         conversation_text = ""
-
     for msg in recent_messages:
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
@@ -117,11 +89,8 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         f"Conversation so far:\n{conversation_text}\n"
         "Answer the user's last query in context."
     )
-
     return query_groq_api(prompt)
 
-
-# --- Extract Text from PDF ---
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -129,8 +98,6 @@ def extract_text_from_pdf(file):
             text += page.extract_text() or ""
     return text.strip()
 
-
-# --- Extract Text from Image ---
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
