@@ -13,3 +13,4 @@ firebase-admin
 supabase
 numpy
 PyPDF2
+pandas
