@@ -14,3 +14,4 @@ supabase
 numpy
 PyPDF2
 pandas
+requests
