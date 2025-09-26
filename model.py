@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 from groq import Groq
 from llama_index.core.schema import TextNode
 from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -8,7 +9,6 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 import pdfplumber
 from PIL import Image
 import pytesseract
-import time
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
@@ -65,8 +65,16 @@ def summarize_messages(messages):
     return query_groq_api(prompt)
 
 def rag_retrieve(query: str) -> list[str]:
-    # Optionally implement RAG if needed
     return []
+
+def is_simple_query(query: str):
+    SIMPLE_QUERIES = [
+        "full form", "meaning of", "define", "abbreviation of", "what is",
+        "who is", "when was", "where is", "how many"
+    ]
+    normalized = query.lower()
+    return any(keyword in normalized for keyword in SIMPLE_QUERIES)
+
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -77,7 +85,6 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
 
     rag_results = rag_retrieve(query)
     rag_context = "\n".join(rag_results)
-
     full_context = context + "\n" + rag_context if rag_context else context
 
     if len(chat_history) > memory_limit:
@@ -88,24 +95,26 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     else:
         recent_messages = chat_history
         conversation_text = ""
+
     for msg in recent_messages:
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # ✅ Structured-answer prompt
-    prompt = (
-        f"Context from documents and files: {full_context}\n"
-        f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context.\n"
-        "Format the answer professionally and clearly using:\n"
-        "- Bullet points for each key point\n"
-        "- Tables for comparisons or numeric data (use Markdown table syntax)\n"
-        "- Highlight keywords using **bold** or *italic* text\n"
-        "- Provide clear reasoning, analysis, or examples when applicable\n"
-        "- Keep language concise and well-structured for readability\n"
-    )
-    return query_groq_api(prompt)
+    if is_simple_query(query):
+        prompt_text = f"{full_context}\nConversation:\n{conversation_text}\nAnswer concisely:"
+    else:
+        prompt_text = (
+            f"{full_context}\nConversation:\n{conversation_text}\n"
+            "Answer the user's last query in context.\n"
+            "Format the answer professionally and clearly using:\n"
+            "- Bullet points for each key point\n"
+            "- Tables for comparisons or numeric data (use Markdown table syntax)\n"
+            "- Highlight keywords using **bold** or *italic* text\n"
+            "- Provide clear reasoning, analysis, or examples when applicable\n"
+            "- Keep language concise and well-structured for readability\n"
+        )
 
+    return query_groq_api(prompt_text)
 
 def extract_text_from_pdf(file):
     text = ""
@@ -117,6 +126,3 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
-
-
-
