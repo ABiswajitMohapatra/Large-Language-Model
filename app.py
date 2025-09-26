@@ -120,7 +120,7 @@ if prompt:
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"⚛ {typed_text}", unsafe_allow_html=False)
-        time.sleep(0.03)  # slower typing for visible effect
+        time.sleep(0.002)  # slower typing for visible effect
 
     add_message("Agent", final_answer)
 
@@ -134,3 +134,4 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
