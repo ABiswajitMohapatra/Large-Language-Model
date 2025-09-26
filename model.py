@@ -14,7 +14,6 @@ import pytesseract
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
-
 # --- Custom Embedding ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
@@ -26,7 +25,6 @@ class CustomEmbedding(BaseEmbedding):
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
-
 # --- Load Documents ---
 def load_documents():
     folder = "Sanjukta"
@@ -35,7 +33,6 @@ def load_documents():
     else:
         print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
         return []
-
 
 # --- Create or Load Index ---
 def create_or_load_index():
@@ -50,7 +47,6 @@ def create_or_load_index():
         with open(index_file, "wb") as f:
             pickle.dump(index, f)
     return index
-
 
 # --- Query Groq API ---
 def query_groq_api(prompt: str, retries=3, delay=2):
@@ -68,7 +64,6 @@ def query_groq_api(prompt: str, retries=3, delay=2):
             else:
                 return f"⚛ Sorry, Groq API failed: {str(e)}"
 
-
 # --- Summarize Messages ---
 def summarize_messages(messages):
     text = ""
@@ -78,12 +73,9 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
-
 # --- (Optional) RAG Retrieve ---
 def rag_retrieve(query: str) -> list[str]:
-    # Optionally implement RAG if needed
     return []
-
 
 # --- Chat with Agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
@@ -112,14 +104,23 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
+    # --- Enhanced prompt for better formatting ---
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context."
+        "Answer the user's last query in **well-structured format** with:\n"
+        "- ✅ **Bulleted points** for clarity\n"
+        "- 📊 **Tables** when comparing data\n"
+        "- 🔑 Highlight **important keywords** in **bold** or *italic*\n"
+        "- 📝 Provide **clear analysis and explanations**\n"
+        "If relevant, use markdown tables like this:\n"
+        "| Algorithm   | Best Case | Average Case | Worst Case | Stable |\n"
+        "|------------ |-----------|--------------|----------- |--------|\n"
+        "| Merge Sort  | O(n log n)| O(n log n)   | O(n log n) | ✅ Yes |\n"
+        "| Quick Sort  | O(n log n)| O(n log n)   | O(n²)      | ❌ No |\n"
     )
 
     return query_groq_api(prompt)
-
 
 # --- Extract Text from PDF ---
 def extract_text_from_pdf(file):
@@ -128,7 +129,6 @@ def extract_text_from_pdf(file):
         for page in pdf.pages:
             text += page.extract_text() or ""
     return text.strip()
-
 
 # --- Extract Text from Image ---
 def extract_text_from_image(file):
