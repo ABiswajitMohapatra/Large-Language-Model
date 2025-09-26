@@ -111,24 +111,28 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- IMPORTANT: Add formatting only for meaningful answers ---
+    # --- Natural greetings ---
     if query.strip().lower() in ["hi", "hello", "hey", "good morning", "good evening"]:
         prompt = (
             f"Conversation so far:\n{conversation_text}\n"
             "Reply naturally to the user's greeting without extra formatting."
         )
     else:
+        # --- Formatted answers with headings ---
         prompt = (
             f"Context from documents and files: {full_context}\n"
             f"Conversation so far:\n{conversation_text}\n"
             "Answer the user's last query in context.\n\n"
-            "⚠ Format rules:\n"
+            "⚠ Formatting rules:\n"
+            "- Start with a **main heading** using Markdown (# Heading).\n"
+            "- Use **bold sub-headings** for sections.\n"
             "- Use • bullet points for listing items.\n"
             "- Use tables if you are making a comparison.\n"
             "- Use **bold** and *italic* for emphasis.\n"
         )
 
     return query_groq_api(prompt)
+
 
 
 # --- Extract Text from PDF ---
@@ -144,3 +148,4 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
+
