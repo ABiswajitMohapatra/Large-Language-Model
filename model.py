@@ -81,6 +81,7 @@ def summarize_messages(messages):
 
 # --- (Optional) RAG Retrieve ---
 def rag_retrieve(query: str) -> list[str]:
+    # Optionally implement RAG if needed
     return []
 
 
@@ -111,24 +112,11 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # --- Natural greetings ---
-    if query.strip().lower() in ["hi", "hello", "hey", "good morning", "good evening"]:
-        prompt = (
-            f"Conversation so far:\n{conversation_text}\n"
-            "Reply naturally to the user's greeting without extra formatting."
-        )
-    else:
-        # --- Formatted answers with proper headings ---
-          prompt = (
-            f"Context from documents and files: {full_context}\n"
-            f"Conversation so far:\n{conversation_text}\n"
-            "Answer the user's last query in context.\n\n"
-            "⚠ Formatting rules:\n"
-            "- Start with a main heading using Markdown (## Heading).\n"
-            "- Use **bold sub-headings** for sections, each on a new line.\n"
-            "- Use • bullet points, each on a new line.\n"
-          )
-
+    prompt = (
+        f"Context from documents and files: {full_context}\n"
+        f"Conversation so far:\n{conversation_text}\n"
+        "Answer the user's last query in context."
+    )
 
     return query_groq_api(prompt)
 
@@ -146,4 +134,3 @@ def extract_text_from_pdf(file):
 def extract_text_from_image(file):
     image = Image.open(file)
     return pytesseract.image_to_string(image)
-
