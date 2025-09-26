@@ -81,7 +81,6 @@ def summarize_messages(messages):
 
 # --- (Optional) RAG Retrieve ---
 def rag_retrieve(query: str) -> list[str]:
-    # Optionally implement RAG if needed
     return []
 
 
@@ -112,11 +111,22 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    prompt = (
-        f"Context from documents and files: {full_context}\n"
-        f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context."
-    )
+    # --- IMPORTANT: Add formatting only for meaningful answers ---
+    if query.strip().lower() in ["hi", "hello", "hey", "good morning", "good evening"]:
+        prompt = (
+            f"Conversation so far:\n{conversation_text}\n"
+            "Reply naturally to the user's greeting without extra formatting."
+        )
+    else:
+        prompt = (
+            f"Context from documents and files: {full_context}\n"
+            f"Conversation so far:\n{conversation_text}\n"
+            "Answer the user's last query in context.\n\n"
+            "⚠ Format rules:\n"
+            "- Use • bullet points for listing items.\n"
+            "- Use tables if you are making a comparison.\n"
+            "- Use **bold** and *italic* for emphasis.\n"
+        )
 
     return query_groq_api(prompt)
 
