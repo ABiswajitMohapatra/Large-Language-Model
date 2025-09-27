@@ -2,6 +2,7 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
+import re
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
@@ -25,16 +26,6 @@ h1 {
     text-align: center;
     color: #FF5722;
     font-size: 28px;
-}
-h2 {
-    color: #4CAF50;
-    font-size: 24px;
-    margin-top: 12px;
-}
-h3 {
-    color: #2196F3;
-    font-size: 20px;
-    margin-top: 8px;
 }
 span.keyword {
     color: #e91e63;
@@ -97,19 +88,28 @@ def check_custom_response(user_input: str):
 
 # --- Render response with formatting ---
 def render_response(text):
-    # Highlight keywords
+    # Highlight important keywords
     keywords = ["important", "note", "advantage", "disadvantage", "example", "key points"]
     for kw in keywords:
-        text = text.replace(kw, f"<span class='keyword'>{kw}</span>")
+        text = re.sub(rf"\b{kw}\b", f"<span class='keyword'>{kw}</span>", text, flags=re.IGNORECASE)
 
-    # Convert section headings (e.g., 'Immutability:', 'Syntax:')
-    headings = ["Immutability", "Syntax", "Performance", "Methods"]
-    for hd in headings:
-        text = text.replace(f"{hd}:", f"<h3 style='color:#673ab7; font-size:20px; margin-top:10px;'>{hd}</h3>")
+    # Heading styles with different colors
+    heading_styles = {
+        "Immutability": "#673ab7",  # Purple
+        "Syntax": "#4CAF50",        # Green
+        "Performance": "#2196F3",   # Blue
+        "Methods": "#ff9800"        # Orange
+    }
+
+    for hd, color in heading_styles.items():
+        text = re.sub(
+            rf"(?m)^{hd}:",
+            f"<h3 style='color:{color}; font-size:20px; font-weight:bold; margin-top:10px;'>{hd}</h3>",
+            text
+        )
 
     # Render Markdown + HTML
     st.markdown(f"<div class='message'>{text}</div>", unsafe_allow_html=True)
-
 
 # --- Display old messages ---
 for msg in st.session_state.current_session:
@@ -170,4 +170,3 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
