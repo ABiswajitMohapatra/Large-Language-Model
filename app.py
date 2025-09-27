@@ -2,7 +2,6 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
-import re
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
@@ -17,32 +16,23 @@ if 'current_session' not in st.session_state:
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
+/* Reduce vertical spacing of messages */
 div.message {
-    margin: 6px 0;
+    margin: 2px 0;
     font-size: 17px;
-    line-height: 1.6;
 }
-h1 {
-    text-align: center;
-    color: #FF5722;
-    font-size: 28px;
+
+/* Adjust chat input block */
+div[data-testid="stHorizontalBlock"] {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
 }
-span.keyword {
-    color: #e91e63;
-    font-weight: bold;
-}
-table {
-    border-collapse: collapse;
-    margin: 10px 0;
-    width: 100%;
-}
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-}
-th {
-    background-color: #f2f2f2;
+
+/* Optional: slightly smaller sidebar on mobile */
+@media only screen and (max-width: 600px) {
+    section[data-testid="stSidebar"] {
+        max-width: 250px;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -58,6 +48,7 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
+# Upload icon only
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     extracted_text = ""
@@ -86,42 +77,19 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Render response with formatting ---
-def render_response(text):
-    # Highlight important keywords
-    keywords = ["important", "note", "advantage", "disadvantage", "example", "key points"]
-    for kw in keywords:
-        text = re.sub(rf"\b{kw}\b", f"<span class='keyword'>{kw}</span>", text, flags=re.IGNORECASE)
-
-    # Heading styles with different colors
-    heading_styles = {
-        "Immutability": "#673ab7",  # Purple
-        "Syntax": "#4CAF50",        # Green
-        "Performance": "#2196F3",   # Blue
-        "Methods": "#ff9800"        # Orange
-    }
-
-    for hd, color in heading_styles.items():
-        text = re.sub(
-            rf"(?m)^{hd}:",
-            f"<h3 style='color:{color}; font-size:20px; font-weight:bold; margin-top:10px;'>{hd}</h3>",
-            text
-        )
-
-    # Render Markdown + HTML
-    st.markdown(f"<div class='message'>{text}</div>", unsafe_allow_html=True)
-
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        render_response(f"⚛ {msg['message']}")
+        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Static header ---
+# --- Static header above chat area ---
 if 'header_rendered' not in st.session_state:
     st.markdown("""
-    <h1>What can I help with 😊</h1>
+    <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
+        What can I help with😊
+    </div>
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
@@ -135,25 +103,27 @@ if prompt:
     placeholder = st.empty()
     typed_text = ""
 
-    # Typing animation with ⚛
-    for char in check_custom_response(prompt.lower()) or chat_with_agent(
-        prompt if "uploaded_pdf_text" not in st.session_state else f"Please summarize this document:\n\n{st.session_state.uploaded_pdf_text}",
-        st.session_state.index,
-        st.session_state.current_session
-    ):
+    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
+       and "uploaded_pdf_text" in st.session_state:
+
+        if st.session_state.uploaded_pdf_text:
+            final_answer = chat_with_agent(
+                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
+                st.session_state.index,
+                st.session_state.current_session
+            )
+        else:
+            final_answer = "⚛ Sorry, no readable text was found in your PDF."
+    else:
+        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
+            prompt, st.session_state.index, st.session_state.current_session
+        )
+
+    for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div class='message'>⚛ {typed_text}</div>", unsafe_allow_html=True)
+        placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
         time.sleep(0.002)
 
-    placeholder.empty()
-
-    # Final agent response with styling
-    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
-        prompt if "uploaded_pdf_text" not in st.session_state else f"Please summarize this document:\n\n{st.session_state.uploaded_pdf_text}",
-        st.session_state.index,
-        st.session_state.current_session
-    )
-    render_response(f"⚛ {final_answer}")
     add_message("Agent", final_answer)
 
 # --- Save session ---
