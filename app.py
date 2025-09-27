@@ -102,8 +102,14 @@ def render_response(text):
     for kw in keywords:
         text = text.replace(kw, f"<span class='keyword'>{kw}</span>")
 
+    # Convert section headings (e.g., 'Immutability:', 'Syntax:')
+    headings = ["Immutability", "Syntax", "Performance", "Methods"]
+    for hd in headings:
+        text = text.replace(f"{hd}:", f"<h3 style='color:#673ab7; font-size:20px; margin-top:10px;'>{hd}</h3>")
+
     # Render Markdown + HTML
     st.markdown(f"<div class='message'>{text}</div>", unsafe_allow_html=True)
+
 
 # --- Display old messages ---
 for msg in st.session_state.current_session:
@@ -164,3 +170,4 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
