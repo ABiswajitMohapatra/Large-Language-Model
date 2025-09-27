@@ -16,10 +16,23 @@ if 'current_session' not in st.session_state:
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
-div.message { margin: 2px 0; font-size: 17px; }
-div[data-testid="stHorizontalBlock"] { margin-bottom: 0px; padding-bottom: 0px; }
+/* Reduce vertical spacing of messages */
+div.message {
+    margin: 2px 0;
+    font-size: 17px;
+}
+
+/* Adjust chat input block */
+div[data-testid="stHorizontalBlock"] {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+
+/* Optional: slightly smaller sidebar on mobile */
 @media only screen and (max-width: 600px) {
-    section[data-testid="stSidebar"] { max-width: 250px; }
+    section[data-testid="stSidebar"] {
+        max-width: 250px;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -35,7 +48,8 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-uploaded_file = st.sidebar.file_uploader("Upload PDF", type=["pdf"])
+# Upload icon only
+uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     extracted_text = ""
     with pdfplumber.open(uploaded_file) as pdf:
@@ -43,14 +57,16 @@ if uploaded_file and "uploaded_pdf_text" not in st.session_state:
             extracted_text += page.extract_text() or ""
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
-# --- Helper functions ---
+# --- Message handler ---
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
 CUSTOM_RESPONSES = {
-    "who created you": "I was created by Biswajit Mohapatra 🚀",
+    "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
     "creator": "My creator is Biswajit Mohapatra.",
     "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
+    "father": "My father is Biswajit Mohapatra.",
+    "who trained you": "I was trained by Biswajit Mohapatra.",
     "trained": "I was trained and fine-tuned by Biswajit Mohapatra."
 }
 
@@ -63,21 +79,23 @@ def check_custom_response(user_input: str):
 
 # --- Display old messages ---
 for msg in st.session_state.current_session:
-    align = "left" if msg['role'] == "Agent" else "right"
-    icon = "⚛" if msg['role'] == "Agent" else "🧑‍🔬"
-    st.markdown(f"<div class='message' style='text-align:{align};'><b>{icon} {msg['message']}</b></div>", unsafe_allow_html=True)
+    if msg['role'] == "Agent":
+        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Chat header ---
+# --- Static header above chat area ---
 if 'header_rendered' not in st.session_state:
     st.markdown("""
     <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
-        How can I assist you today?😊
+        What can I help with😊
     </div>
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
+
 if prompt:
     add_message("User", prompt)
     st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
@@ -85,12 +103,12 @@ if prompt:
     placeholder = st.empty()
     typed_text = ""
 
-    # PDF-related queries
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
        and "uploaded_pdf_text" in st.session_state:
+
         if st.session_state.uploaded_pdf_text:
             final_answer = chat_with_agent(
-                f"Please provide a **structured summary** of this document:\n\n{st.session_state.uploaded_pdf_text}",
+                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
                 st.session_state.index,
                 st.session_state.current_session
             )
@@ -101,7 +119,6 @@ if prompt:
             prompt, st.session_state.index, st.session_state.current_session
         )
 
-    # Typing animation
     for char in final_answer:
         typed_text += char
         placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
@@ -116,7 +133,6 @@ if st.sidebar.button("Save Session"):
 
 # --- Sidebar helper ---
 st.sidebar.markdown(
-    "<p style='font-size:14px; color:gray;'>Right-click the chat input for emojis and extra features.</p>",
+    "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
