@@ -16,23 +16,42 @@ if 'current_session' not in st.session_state:
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
-/* Reduce vertical spacing of messages */
 div.message {
-    margin: 2px 0;
+    margin: 6px 0;
     font-size: 17px;
+    line-height: 1.6;
 }
-
-/* Adjust chat input block */
-div[data-testid="stHorizontalBlock"] {
-    margin-bottom: 0px;
-    padding-bottom: 0px;
+h1 {
+    text-align: center;
+    color: #FF5722;
+    font-size: 28px;
 }
-
-/* Optional: slightly smaller sidebar on mobile */
-@media only screen and (max-width: 600px) {
-    section[data-testid="stSidebar"] {
-        max-width: 250px;
-    }
+h2 {
+    color: #4CAF50;
+    font-size: 24px;
+    margin-top: 12px;
+}
+h3 {
+    color: #2196F3;
+    font-size: 20px;
+    margin-top: 8px;
+}
+span.keyword {
+    color: #e91e63;
+    font-weight: bold;
+}
+table {
+    border-collapse: collapse;
+    margin: 10px 0;
+    width: 100%;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+th {
+    background-color: #f2f2f2;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -48,7 +67,6 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     extracted_text = ""
@@ -77,19 +95,27 @@ def check_custom_response(user_input: str):
             return response
     return None
 
+# --- Render response with formatting ---
+def render_response(text):
+    # Highlight keywords
+    keywords = ["important", "note", "advantage", "disadvantage", "example", "key points"]
+    for kw in keywords:
+        text = text.replace(kw, f"<span class='keyword'>{kw}</span>")
+
+    # Render Markdown + HTML
+    st.markdown(f"<div class='message'>{text}</div>", unsafe_allow_html=True)
+
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        render_response(f"⚛ {msg['message']}")
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Static header above chat area ---
+# --- Static header ---
 if 'header_rendered' not in st.session_state:
     st.markdown("""
-    <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
-        What can I help with😊
-    </div>
+    <h1>What can I help with 😊</h1>
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
@@ -121,9 +147,11 @@ if prompt:
 
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(f"<div class='message'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
         time.sleep(0.002)
 
+    placeholder.empty()
+    render_response(final_answer)
     add_message("Agent", final_answer)
 
 # --- Save session ---
