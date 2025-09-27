@@ -88,7 +88,7 @@ for msg in st.session_state.current_session:
 if 'header_rendered' not in st.session_state:
     st.markdown("""
     <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
-        What can I help with😊
+        What can I help with?😊
     </div>
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
