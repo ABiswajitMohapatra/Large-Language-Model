@@ -135,29 +135,25 @@ if prompt:
     placeholder = st.empty()
     typed_text = ""
 
-    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
-       and "uploaded_pdf_text" in st.session_state:
-
-        if st.session_state.uploaded_pdf_text:
-            final_answer = chat_with_agent(
-                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
-                st.session_state.index,
-                st.session_state.current_session
-            )
-        else:
-            final_answer = "⚛ Sorry, no readable text was found in your PDF."
-    else:
-        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
-            prompt, st.session_state.index, st.session_state.current_session
-        )
-
-    for char in final_answer:
+    # Typing animation with ⚛
+    for char in check_custom_response(prompt.lower()) or chat_with_agent(
+        prompt if "uploaded_pdf_text" not in st.session_state else f"Please summarize this document:\n\n{st.session_state.uploaded_pdf_text}",
+        st.session_state.index,
+        st.session_state.current_session
+    ):
         typed_text += char
-        placeholder.markdown(f"<div class='message'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(f"<div class='message'>⚛ {typed_text}</div>", unsafe_allow_html=True)
         time.sleep(0.002)
 
     placeholder.empty()
-    render_response(final_answer)
+
+    # Final agent response with styling
+    final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
+        prompt if "uploaded_pdf_text" not in st.session_state else f"Please summarize this document:\n\n{st.session_state.uploaded_pdf_text}",
+        st.session_state.index,
+        st.session_state.current_session
+    )
+    render_response(f"⚛ {final_answer}")
     add_message("Agent", final_answer)
 
 # --- Save session ---
