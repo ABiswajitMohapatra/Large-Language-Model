@@ -71,7 +71,7 @@ for msg in st.session_state.current_session:
 if 'header_rendered' not in st.session_state:
     st.markdown("""
     <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
-        How can I assist you today? 😊
+        How can I assist you today?😊
     </div>
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
@@ -119,3 +119,4 @@ st.sidebar.markdown(
     "<p style='font-size:14px; color:gray;'>Right-click the chat input for emojis and extra features.</p>",
     unsafe_allow_html=True
 )
+
