@@ -69,24 +69,29 @@ def summarize_messages(messages):
     return query_groq_api(prompt)
 
 # --- RAG: Fetch latest info (World News + Wikipedia) ---
-WORLD_NEWS_API_KEY = "c9c023f75d614f6eac8a975f15dd1859"
+WORLD_NEWS_API_KEY = "3e44dc7d70e54273a555227f01790315"
 
 def fetch_latest_info(query: str) -> list[str]:
     snippets = []
 
     # --- World News API ---
     try:
-        url = "https://worldnewsapi.com/api/v1/search"
+        url = "https://worldnewsapi.com/api/v1/search-news"
         params = {
             "q": query,
             "language": "en",
             "apiKey": WORLD_NEWS_API_KEY
         }
         response = requests.get(url, params=params, timeout=5)
-        data = response.json()
-        for article in data.get("articles", []):
-            if "title" in article and "content" in article:
-                snippets.append(f"{article['title']}: {article['content']}")
+        if response.status_code == 200:
+            data = response.json()
+            for article in data.get("articles", []):
+                title = article.get("title", "")
+                content = article.get("content", "")
+                if title or content:
+                    snippets.append(f"{title}: {content}")
+        else:
+            snippets.append(f"⚠ Could not fetch latest news, status code: {response.status_code}")
     except Exception as e:
         snippets.append(f"⚠ Could not fetch latest news: {str(e)}")
 
@@ -134,9 +139,10 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     conversation_text += f"User: {query}\n"
 
     prompt = (
-        f"Context from documents, files, and latest info: {full_context}\n"
+        f"You are an expert assistant. Use the context provided from documents, uploaded files, and latest retrieved information to answer the user's query.\n\n"
+        f"Context: {full_context}\n\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context."
+        "Answer the user's last query using the most recent and up-to-date information."
     )
     return query_groq_api(prompt)
 
