@@ -42,8 +42,37 @@ div[data-testid="stHorizontalBlock"] {
     color: blue !important;
     font-size: 14px;
 }
+
+/* Copy icon styles */
+.copy-icon {
+    cursor: pointer;
+    margin-left: 8px;
+    color: #007bff;
+    font-weight: bold;
+}
 </style>
 """, unsafe_allow_html=True)
+
+
+def display_agent_message_with_copy(text):
+    # Sanitize text for JS
+    sanitized_text = text.replace('"', '&quot;').replace("'", "&apos;").replace("\n", "\\n").replace("\r", "")
+    # Find last period or else end
+    pos = text.rfind(".")
+    if pos == -1:
+        display_text = text
+        after_text = ""
+    else:
+        display_text = text[:pos+1]
+        after_text = text[pos+1:]
+    html_content = f"""
+    <div class='message' style='text-align:left; display:flex; align-items:center;'>
+        <div style='flex-grow:1;'>⚛ <b>{display_text}</b>{after_text}</div>
+        <div class='copy-icon' onclick='navigator.clipboard.writeText("{sanitized_text}");alert("Copied to clipboard")' title='Copy to clipboard'>&#x2398;</div>
+    </div>
+    """
+    st.markdown(html_content, unsafe_allow_html=True)
+
 
 # --- Sidebar ---
 st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
@@ -88,7 +117,7 @@ def check_custom_response(user_input: str):
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
-        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        display_agent_message_with_copy(msg['message'])
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
@@ -149,6 +178,10 @@ if prompt:
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
+
+    # Replace last printed answer with copy icon as well
+    placeholder.empty()
+    display_agent_message_with_copy(final_answer)
 
     # Balloon effect on answer completion
     st.balloons()
