@@ -62,7 +62,6 @@ def summarize_messages(messages):
     return query_groq_api(prompt)
 
 def rag_retrieve(query: str) -> list[str]:
-    # Stub for integrating RAG search results; returns empty list for now
     return []
 
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content="", model_name="llama-3.3-70b-versatile"):
