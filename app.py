@@ -2,6 +2,8 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
+from fpdf import FPDF
+import io
 import json
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
@@ -34,6 +36,12 @@ div[data-testid="stHorizontalBlock"] {
     section[data-testid="stSidebar"] {
         max-width: 250px;
     }
+}
+
+/* Blue color for sidebar helper text */
+.sidebar-helper {
+    color: blue !important;
+    font-size: 14px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -94,6 +102,26 @@ if 'header_rendered' not in st.session_state:
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
+# --- Generate PDF from chat ---
+def generate_chat_pdf(messages):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    for msg in messages:
+        role = msg.get('role', '')
+        content = msg.get('message', '')
+        if role.lower() == 'user':
+            pdf.set_text_color(0, 0, 255)  # Blue for user
+        else:
+            pdf.set_text_color(0, 128, 0)  # Green for agent
+        pdf.multi_cell(0, 10, f"{role}: {content}")
+        pdf.ln(3)
+    pdf_output = io.BytesIO()
+    pdf.output(pdf_output)
+    pdf_output.seek(0)
+    return pdf_output
+
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
@@ -124,7 +152,7 @@ if prompt:
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
-    
+
     # Balloon effect on answer completion
     st.balloons()
 
@@ -134,17 +162,17 @@ if st.sidebar.button("Save Session"):
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
 # --- Sidebar Download Chat Button ---
-if st.sidebar.button("Download Chat"):
-    chat_json = json.dumps(st.session_state.current_session, indent=2)
+if st.sidebar.button("Download Chat as PDF"):
+    pdf_file = generate_chat_pdf(st.session_state.current_session)
     st.sidebar.download_button(
-        label="Download Current Chat as JSON",
-        data=chat_json,
-        file_name="chat_session.json",
-        mime="application/json"
+        label="Download Current Chat as PDF",
+        data=pdf_file,
+        file_name="chat_session.pdf",
+        mime="application/pdf"
     )
 
 # --- Sidebar helper ---
 st.sidebar.markdown(
-    "<p style='font-size:14px; color:gray;'>Right-click on the chat input to access emojis and additional features.</p>",
+    "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
