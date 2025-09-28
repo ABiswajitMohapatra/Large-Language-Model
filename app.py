@@ -2,6 +2,7 @@ import streamlit as st
 from model import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
+import json
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
@@ -103,9 +104,7 @@ if prompt:
     placeholder = st.empty()
     typed_text = ""
 
-    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) \
-       and "uploaded_pdf_text" in st.session_state:
-
+    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) and "uploaded_pdf_text" in st.session_state:
         if st.session_state.uploaded_pdf_text:
             final_answer = chat_with_agent(
                 f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
@@ -125,11 +124,24 @@ if prompt:
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
+    
+    # Balloon effect on answer completion
+    st.balloons()
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
+
+# --- Sidebar Download Chat Button ---
+if st.sidebar.button("Download Chat"):
+    chat_json = json.dumps(st.session_state.current_session, indent=2)
+    st.sidebar.download_button(
+        label="Download Current Chat as JSON",
+        data=chat_json,
+        file_name="chat_session.json",
+        mime="application/json"
+    )
 
 # --- Sidebar helper ---
 st.sidebar.markdown(
