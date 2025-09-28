@@ -53,11 +53,10 @@ div[data-testid="stHorizontalBlock"] {
 </style>
 """, unsafe_allow_html=True)
 
-
 def display_agent_message_with_copy(text):
-    # Sanitize text for JS
+    # Sanitize text for JS clipboard copy
     sanitized_text = text.replace('"', '&quot;').replace("'", "&apos;").replace("\n", "\\n").replace("\r", "")
-    # Find last period or else end
+    # Split display so copy icon appears right after last period in text
     pos = text.rfind(".")
     if pos == -1:
         display_text = text
@@ -73,7 +72,6 @@ def display_agent_message_with_copy(text):
     """
     st.markdown(html_content, unsafe_allow_html=True)
 
-
 # --- Sidebar ---
 st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
 if st.sidebar.button("New Chat"):
@@ -85,7 +83,6 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     extracted_text = ""
@@ -94,7 +91,6 @@ if uploaded_file and "uploaded_pdf_text" not in st.session_state:
             extracted_text += page.extract_text() or ""
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
-# --- Message handler ---
 def add_message(role, message):
     st.session_state.current_session.append({"role": role, "message": message})
 
@@ -114,14 +110,12 @@ def check_custom_response(user_input: str):
             return response
     return None
 
-# --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg['role'] == "Agent":
         display_agent_message_with_copy(msg['message'])
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Static header above chat area ---
 if 'header_rendered' not in st.session_state:
     st.markdown("""
     <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
@@ -130,7 +124,6 @@ if 'header_rendered' not in st.session_state:
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
-# --- Generate PDF from chat ---
 def generate_chat_pdf(messages):
     pdf = FPDF()
     pdf.add_page()
@@ -144,33 +137,24 @@ def generate_chat_pdf(messages):
         else:
             pdf.set_text_color(0, 128, 0)  # Green for agent
         pdf.multi_cell(0, 10, f"{role}: {content}")
-        pdf.ln(3)
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return io.BytesIO(pdf_bytes)
 
-# --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
     add_message("User", prompt)
     st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
-
     placeholder = st.empty()
     typed_text = ""
 
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) and "uploaded_pdf_text" in st.session_state:
         if st.session_state.uploaded_pdf_text:
-            final_answer = chat_with_agent(
-                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
-                st.session_state.index,
-                st.session_state.current_session
-            )
+            final_answer = chat_with_agent(f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}", st.session_state.index, st.session_state.current_session)
         else:
             final_answer = "⚛ Sorry, no readable text was found in your PDF."
     else:
-        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
-            prompt, st.session_state.index, st.session_state.current_session
-        )
+        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
 
     for char in final_answer:
         typed_text += char
@@ -178,31 +162,16 @@ if prompt:
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
-
-    # Replace last printed answer with copy icon as well
     placeholder.empty()
     display_agent_message_with_copy(final_answer)
-
-    # Balloon effect on answer completion
     st.balloons()
 
-# --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
-# --- Sidebar Download Chat Button ---
 if st.sidebar.button("Download Chat as PDF"):
     pdf_file = generate_chat_pdf(st.session_state.current_session)
-    st.sidebar.download_button(
-        label="Download Current Chat as PDF",
-        data=pdf_file,
-        file_name="chat_session.pdf",
-        mime="application/pdf"
-    )
+    st.sidebar.download_button(label="Download Current Chat as PDF", data=pdf_file, file_name="chat_session.pdf", mime="application/pdf")
 
-# --- Sidebar helper ---
-st.sidebar.markdown(
-    "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
-    unsafe_allow_html=True
-)
+st.sidebar.markdown("<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>", unsafe_allow_html=True)
