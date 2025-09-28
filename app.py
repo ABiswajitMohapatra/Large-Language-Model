@@ -4,7 +4,6 @@ import pdfplumber
 import time
 from fpdf import FPDF
 import io
-import json
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
@@ -117,10 +116,8 @@ def generate_chat_pdf(messages):
             pdf.set_text_color(0, 128, 0)  # Green for agent
         pdf.multi_cell(0, 10, f"{role}: {content}")
         pdf.ln(3)
-    pdf_output = io.BytesIO()
-    pdf.output(pdf_output)
-    pdf_output.seek(0)
-    return pdf_output
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
+    return io.BytesIO(pdf_bytes)
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
