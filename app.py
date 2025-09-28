@@ -7,6 +7,13 @@ import io
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
+# --- Add Model Selection ---
+selected_model = st.sidebar.selectbox(
+    "Choose your AI model",
+    options=["llama-3.3-70b-versatile", "gpt-4.0"],
+    index=0  # default llama
+)
+
 # --- Initialize index and sessions ---
 if 'index' not in st.session_state:
     st.session_state.index = create_or_load_index()
@@ -149,11 +156,21 @@ if prompt:
 
     if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) and "uploaded_pdf_text" in st.session_state:
         if st.session_state.uploaded_pdf_text:
-            final_answer = chat_with_agent(f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}", st.session_state.index, st.session_state.current_session)
+            final_answer = chat_with_agent(
+                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
+                st.session_state.index,
+                st.session_state.current_session,
+                model_name=selected_model,
+            )
         else:
             final_answer = "⚛ Sorry, no readable text was found in your PDF."
     else:
-        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(prompt, st.session_state.index, st.session_state.current_session)
+        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
+            prompt,
+            st.session_state.index,
+            st.session_state.current_session,
+            model_name=selected_model,
+        )
 
     for char in final_answer:
         typed_text += char
@@ -171,6 +188,14 @@ if st.sidebar.button("Save Session"):
 
 if st.sidebar.button("Download Chat as PDF"):
     pdf_file = generate_chat_pdf(st.session_state.current_session)
-    st.sidebar.download_button(label="Download Current Chat as PDF", data=pdf_file, file_name="chat_session.pdf", mime="application/pdf")
+    st.sidebar.download_button(
+        label="Download Current Chat as PDF",
+        data=pdf_file,
+        file_name="chat_session.pdf",
+        mime="application/pdf"
+    )
 
-st.sidebar.markdown("<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>", unsafe_allow_html=True)
+st.sidebar.markdown(
+    "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
+    unsafe_allow_html=True
+)
