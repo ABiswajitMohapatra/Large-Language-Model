@@ -1,6 +1,5 @@
 import os
 import pickle
-import requests
 from groq import Groq
 from llama_index.core.schema import TextNode
 from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -10,14 +9,9 @@ import pdfplumber
 from PIL import Image
 import pytesseract
 
-# --- API Keys ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-WORLD_NEWS_API_KEY = os.environ.get("WORLD_NEWS_API_KEY")
-
 client = Groq(api_key=GROQ_API_KEY)
 
-
-# --- Embeddings Stub ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
@@ -26,8 +20,6 @@ class CustomEmbedding(BaseEmbedding):
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
-
-# --- Document Loader ---
 def load_documents():
     folder = "Sanjukta"
     if os.path.exists(folder):
@@ -36,8 +28,6 @@ def load_documents():
         print(f"⚠ Folder '{folder}' not found. Continuing with empty documents.")
         return []
 
-
-# --- Index Management ---
 def create_or_load_index():
     index_file = "index.pkl"
     if os.path.exists(index_file):
@@ -51,8 +41,6 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
-
-# --- Query Groq LLM ---
 def query_groq_api(prompt: str):
     try:
         chat_completion = client.chat.completions.create(
@@ -66,8 +54,6 @@ def query_groq_api(prompt: str):
             return "⚛ Sorry, the API rate limit has been reached. Please try again in a few moments."
         return f"⚛ An unexpected error occurred: {err_msg}"
 
-
-# --- Summarizer for Long Chat History ---
 def summarize_messages(messages):
     text = ""
     for msg in messages:
@@ -75,33 +61,9 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
-
-# --- RAG Retrieval (Fetch Latest News) ---
 def rag_retrieve(query: str) -> list[str]:
-    results = []
-    if not WORLD_NEWS_API_KEY:
-        return ["⚠ WORLD_NEWS_API_KEY not set. Cannot fetch latest updates."]
-    try:
-        url = "https://worldnewsapi.com/api/v1/search-news"
-        params = {"q": query, "language": "en"}
-        headers = {"x-api-key": WORLD_NEWS_API_KEY}
+    return []
 
-        response = requests.get(url, params=params, headers=headers, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            for article in data.get("news", []):
-                title = article.get("title", "")
-                content = article.get("text", "")
-                if title or content:
-                    results.append(f"{title}: {content}")
-        else:
-            results.append(f"⚠ News API error {response.status_code}: {response.text}")
-    except Exception as e:
-        results.append(f"⚠ Could not fetch latest news: {str(e)}")
-    return results
-
-
-# --- Chat Agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
@@ -110,12 +72,11 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     if extra_file_content:
         context += f"\nAdditional context from uploaded file:\n{extra_file_content}"
 
-    # ✅ Add RAG Results
     rag_results = rag_retrieve(query)
     rag_context = "\n".join(rag_results)
+
     full_context = context + "\n" + rag_context if rag_context else context
 
-    # Manage memory (summarize old chats)
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
@@ -128,16 +89,13 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         conversation_text += f"{msg['role']}: {msg['message']}\n"
     conversation_text += f"User: {query}\n"
 
-    # Build final prompt
     prompt = (
         f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context using the most recent news and documents."
+        "Answer the user's last query in context."
     )
     return query_groq_api(prompt)
 
-
-# --- PDF & Image Extraction ---
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
