@@ -41,10 +41,10 @@ def create_or_load_index():
             pickle.dump(index, f)
     return index
 
-def query_groq_api(prompt: str):
+def query_groq_api(prompt: str, model_name="llama-3.3-70b-versatile"):
     try:
         chat_completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=model_name,
             messages=[{"role": "user", "content": prompt}]
         )
         return chat_completion.choices[0].message.content
@@ -62,9 +62,10 @@ def summarize_messages(messages):
     return query_groq_api(prompt)
 
 def rag_retrieve(query: str) -> list[str]:
+    # Stub for integrating RAG search results; returns empty list for now
     return []
 
-def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
+def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content="", model_name="llama-3.3-70b-versatile"):
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
@@ -94,7 +95,7 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
         f"Conversation so far:\n{conversation_text}\n"
         "Answer the user's last query in context."
     )
-    return query_groq_api(prompt)
+    return query_groq_api(prompt, model_name=model_name)
 
 def extract_text_from_pdf(file):
     text = ""
