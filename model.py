@@ -1,5 +1,6 @@
 import os
 import pickle
+import requests
 from groq import Groq
 from llama_index.core.schema import TextNode
 from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -8,8 +9,12 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 import pdfplumber
 from PIL import Image
 import pytesseract
+import streamlit as st
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+# Access keys securely via streamlit.secrets if running on Streamlit Cloud
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY") 
+NEWSAPI_KEY = st.secrets["newsapi"]["api_key"]
+
 client = Groq(api_key=GROQ_API_KEY)
 
 class CustomEmbedding(BaseEmbedding):
@@ -25,7 +30,7 @@ def load_documents():
     if os.path.exists(folder):
         return SimpleDirectoryReader(folder).load_data()
     else:
-        print(f"⚠ Folder '{folder}' not found. Continuing with empty documents.")
+        print(f"⚠️ Folder '{folder}' not found. Continuing with empty documents.")
         return []
 
 def create_or_load_index():
@@ -61,22 +66,59 @@ def summarize_messages(messages):
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
-def rag_retrieve(query: str) -> list[str]:
-    return []
+def fetch_news(query: str, api_key: str, page_size: int = 5):
+    url = "https://newsapi.org/v2/everything"
+    params = {
+        "q": query,
+        "pageSize": page_size,
+        "apiKey": api_key,
+        "language": "en",
+        "sortBy": "relevancy"
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("articles", [])
+    else:
+        return []
+
+def rag_retrieve(query: str, index=None, top_k=3) -> list[str]:
+    results = []
+    # Retrieve from local index if available
+    if index is not None:
+        retriever: BaseRetriever = index.as_retriever()
+        nodes = retriever.retrieve(query)
+        for node in nodes[:top_k]:
+            if isinstance(node, TextNode):
+                text = node.get_text()
+                if text:
+                    results.append(text)
+    # Retrieve live news articles from NewsAPI
+    news_articles = fetch_news(query, NEWSAPI_KEY, page_size=top_k)
+    for article in news_articles:
+        title = article.get("title", "")
+        desc = article.get("description", "")
+        if title and desc:
+            results.append(f"News Title: {title}\nSummary: {desc}")
+    return results
 
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
+    # Get local documents context via retriever
     retriever: BaseRetriever = index.as_retriever()
     nodes = retriever.retrieve(query)
     context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
 
+    # Additional context from uploaded files
     if extra_file_content:
         context += f"\nAdditional context from uploaded file:\n{extra_file_content}"
 
-    rag_results = rag_retrieve(query)
+    # Use RAG retrieve to get both local docs and live news context
+    rag_results = rag_retrieve(query, index=index, top_k=3)
     rag_context = "\n".join(rag_results)
 
     full_context = context + "\n" + rag_context if rag_context else context
 
+    # Manage chat history and summarize if exceeding memory_limit
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
