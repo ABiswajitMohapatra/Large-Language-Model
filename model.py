@@ -4,6 +4,7 @@ import requests
 from groq import Groq
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core import VectorStoreIndex
+from llama_index.core.schema import TextNode
 from PIL import Image
 import pytesseract
 import pdfplumber
@@ -49,8 +50,8 @@ def query_groq_api(prompt: str):
     except Exception as e:
         err_msg = str(e)
         if "RateLimit" in err_msg:
-            return "⚛ Sorry, the API rate limit has been reached. Try again later."
-        return f"⚛ An unexpected error occurred: {err_msg}"
+            return "⚛ API rate limit reached. Try again later."
+        return f"⚛ Unexpected error: {err_msg}"
 
 def summarize_messages(messages):
     text = "".join([f"{m['role']}: {m['message']}\n" for m in messages])
@@ -86,7 +87,7 @@ def fetch_cricket_score(match_id: str):
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
-        score = data.get('score') or data.get('stat') or data.get('score_string') or "No score available"
+        score = data.get('score') or data.get('stat') or "No score available"
         team1 = data.get('team-1', '')
         team2 = data.get('team-2', '')
         return {"score": score, "team-1": team1, "team-2": team2}
@@ -123,12 +124,12 @@ def rag_retrieve(query: str, index=None, top_k=3) -> list[str]:
             if title and desc:
                 results.append(f"📰 News Title: {title}\nSummary: {desc}")
 
-    # --- Local index (PDF/Image docs if any) ---
+    # --- Local index (PDF/Image docs) ---
     if index is not None:
         retriever = index.as_retriever()
         nodes = retriever.retrieve(query)
         for node in nodes[:top_k]:
-            if hasattr(node, "get_text"):
+            if isinstance(node, TextNode):  # ✅ FIX
                 text = node.get_text()
                 if text:
                     results.append(f"📄 File Content: {text[:500]}...")  # preview first 500 chars
