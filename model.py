@@ -1,23 +1,17 @@
 import os
 import pickle
-import requests
 from groq import Groq
-from llama_index.core.base.embeddings.base import BaseEmbedding
-from llama_index.core import VectorStoreIndex
 from llama_index.core.schema import TextNode
+from llama_index.core.base.embeddings.base import BaseEmbedding
+from llama_index.core.base.base_retriever import BaseRetriever
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+import pdfplumber
 from PIL import Image
 import pytesseract
-import pdfplumber
-import streamlit as st
 
-# --- API Keys ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-NEWSAPI_KEY = st.secrets["newsapi"]["api_key"]
-CRICAPI_KEY = st.secrets["cricapi"]["api_key"]
-
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- Custom Embedding ---
 class CustomEmbedding(BaseEmbedding):
     def _get_query_embedding(self, query: str) -> list[float]:
         return [0.0] * 512
@@ -26,20 +20,27 @@ class CustomEmbedding(BaseEmbedding):
     def _get_text_embedding(self, text: str) -> list[float]:
         return [0.0] * 512
 
-# --- Vector Index ---
+def load_documents():
+    folder = "Sanjukta"
+    if os.path.exists(folder):
+        return SimpleDirectoryReader(folder).load_data()
+    else:
+        print(f"⚠ Folder '{folder}' not found. Continuing with empty documents.")
+        return []
+
 def create_or_load_index():
     index_file = "index.pkl"
     if os.path.exists(index_file):
         with open(index_file, "rb") as f:
             index = pickle.load(f)
     else:
+        docs = load_documents()
         embedding_model = CustomEmbedding()
-        index = VectorStoreIndex([], embed_model=embedding_model)
+        index = VectorStoreIndex(docs, embed_model=embedding_model)
         with open(index_file, "wb") as f:
             pickle.dump(index, f)
     return index
 
-# --- Groq Query ---
 def query_groq_api(prompt: str):
     try:
         chat_completion = client.chat.completions.create(
@@ -50,96 +51,31 @@ def query_groq_api(prompt: str):
     except Exception as e:
         err_msg = str(e)
         if "RateLimit" in err_msg:
-            return "⚛ API rate limit reached. Try again later."
-        return f"⚛ Unexpected error: {err_msg}"
+            return "⚛ Sorry, the API rate limit has been reached. Please try again in a few moments."
+        return f"⚛ An unexpected error occurred: {err_msg}"
 
 def summarize_messages(messages):
-    text = "".join([f"{m['role']}: {m['message']}\n" for m in messages])
+    text = ""
+    for msg in messages:
+        text += f"{msg['role']}: {msg['message']}\n"
     prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
     return query_groq_api(prompt)
 
-# --- News API ---
-def fetch_news(query: str, api_key: str, page_size: int = 5):
-    url = "https://newsapi.org/v2/everything"
-    params = {
-        "q": query,
-        "pageSize": page_size,
-        "apiKey": api_key,
-        "language": "en",
-        "sortBy": "relevancy"
-    }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        data = response.json()
-        return data.get("articles", [])
+def rag_retrieve(query: str) -> list[str]:
     return []
 
-# --- Cricket API ---
-def fetch_recent_matches():
-    url = f"https://cricapi.com/api/matches?apikey={CRICAPI_KEY}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json().get("matches", [])
-    return []
-
-def fetch_cricket_score(match_id: str):
-    url = f"https://cricapi.com/api/cricketScore?apikey={CRICAPI_KEY}&unique_id={match_id}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        score = data.get('score') or data.get('stat') or "No score available"
-        team1 = data.get('team-1', '')
-        team2 = data.get('team-2', '')
-        return {"score": score, "team-1": team1, "team-2": team2}
-    return {"score": "Unable to fetch score"}
-
-def cricket_retrieve(query: str):
-    matches = fetch_recent_matches()
-    query_lower = query.lower()
-    for match in matches:
-        teams = [match.get("team-1", ""), match.get("team-2", "")]
-        if ("asia cup" in query_lower) or any(t.lower() in query_lower for t in teams):
-            match_id = match.get("unique_id")
-            score_data = fetch_cricket_score(match_id)
-            return f"🏏 {score_data['team-1']} vs {score_data['team-2']} - {score_data['score']}"
-    return None
-
-# --- RAG Retrieve (Universal) ---
-def rag_retrieve(query: str, index=None, top_k=3) -> list[str]:
-    results = []
-
-    # --- Cricket ---
-    if any(word in query.lower() for word in ["score", "cricket", "asia cup", "odi", "t20", "ipl"]):
-        cricket_result = cricket_retrieve(query)
-        if cricket_result:
-            results.append(cricket_result)
-
-    # --- News ---
-    news_keywords = ["news", "update", "breaking", "latest", "report", "headline"]
-    if any(word in query.lower() for word in news_keywords) or len(results) == 0:
-        news_articles = fetch_news(query, NEWSAPI_KEY, page_size=top_k)
-        for article in news_articles:
-            title = article.get("title", "")
-            desc = article.get("description", "")
-            if title and desc:
-                results.append(f"📰 News Title: {title}\nSummary: {desc}")
-
-    # --- Local index (PDF/Image docs) ---
-    if index is not None:
-        retriever = index.as_retriever()
-        nodes = retriever.retrieve(query)
-        for node in nodes[:top_k]:
-            if isinstance(node, TextNode):  # ✅ FIX
-                text = node.get_text()
-                if text:
-                    results.append(f"📄 File Content: {text[:500]}...")  # preview first 500 chars
-
-    return results
-
-# --- Chat Agent ---
 def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
-    rag_results = rag_retrieve(query, index=index, top_k=3)
+    retriever: BaseRetriever = index.as_retriever()
+    nodes = retriever.retrieve(query)
+    context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
+
+    if extra_file_content:
+        context += f"\nAdditional context from uploaded file:\n{extra_file_content}"
+
+    rag_results = rag_retrieve(query)
     rag_context = "\n".join(rag_results)
+
+    full_context = context + "\n" + rag_context if rag_context else context
 
     if len(chat_history) > memory_limit:
         old_messages = chat_history[:-memory_limit]
@@ -154,13 +90,12 @@ def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_cont
     conversation_text += f"User: {query}\n"
 
     prompt = (
-        f"Context from news/cricket/files: {rag_context}\n"
+        f"Context from documents and files: {full_context}\n"
         f"Conversation so far:\n{conversation_text}\n"
         "Answer the user's last query in context."
     )
     return query_groq_api(prompt)
 
-# --- File Helpers ---
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
