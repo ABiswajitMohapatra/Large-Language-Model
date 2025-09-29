@@ -1,5 +1,5 @@
 import streamlit as st
-from model import create_or_load_index, chat_with_agent
+from model import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
 from fpdf import FPDF
@@ -173,4 +173,3 @@ st.sidebar.markdown(
     "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
-
