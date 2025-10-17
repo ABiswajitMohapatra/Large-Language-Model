@@ -101,24 +101,6 @@ if 'header_rendered' not in st.session_state:
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
-# --- Generate PDF from chat ---
-def generate_chat_pdf(messages):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-    for msg in messages:
-        role = msg.get('role', '')
-        content = msg.get('message', '')
-        if role.lower() == 'user':
-            pdf.set_text_color(0, 0, 255)  # Blue for user
-        else:
-            pdf.set_text_color(0, 128, 0)  # Green for agent
-        pdf.multi_cell(0, 10, f"{role}: {content}")
-        pdf.ln(3)
-   pdf_bytes = pdf.output(dest='S').encode('latin1', 'ignore')
-    return io.BytesIO(pdf_bytes)
-
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
@@ -158,20 +140,12 @@ if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
-# --- Sidebar Download Chat Button ---
-if st.sidebar.button("Download Chat as PDF"):
-    pdf_file = generate_chat_pdf(st.session_state.current_session)
-    st.sidebar.download_button(
-        label="Download Current Chat as PDF",
-        data=pdf_file,
-        file_name="chat_session.pdf",
-        mime="application/pdf"
-    )
 
 # --- Sidebar helper ---
 st.sidebar.markdown(
     "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
 
