@@ -4,6 +4,8 @@ import pdfplumber
 import time
 from fpdf import FPDF
 import io
+import os
+import requests
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
@@ -18,26 +20,22 @@ if 'current_session' not in st.session_state:
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
-/* Reduce vertical spacing of messages */
 div.message {
     margin: 2px 0;
     font-size: 17px;
 }
 
-/* Adjust chat input block */
 div[data-testid="stHorizontalBlock"] {
     margin-bottom: 0px;
     padding-bottom: 0px;
 }
 
-/* Optional: slightly smaller sidebar on mobile */
 @media only screen and (max-width: 600px) {
     section[data-testid="stSidebar"] {
         max-width: 250px;
     }
 }
 
-/* Blue color for sidebar helper text */
 .sidebar-helper {
     color: blue !important;
     font-size: 14px;
@@ -56,7 +54,6 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only
 uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
 if uploaded_file and "uploaded_pdf_text" not in st.session_state:
     extracted_text = ""
@@ -92,7 +89,7 @@ for msg in st.session_state.current_session:
     else:
         st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
 
-# --- Static header above chat area ---
+# --- Static header ---
 if 'header_rendered' not in st.session_state:
     st.markdown("""
     <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
@@ -101,23 +98,43 @@ if 'header_rendered' not in st.session_state:
     """, unsafe_allow_html=True)
     st.session_state.header_rendered = True
 
-# --- Generate PDF from chat ---
+# --- Fixed generate_chat_pdf function ---
 def generate_chat_pdf(messages):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
+
+    # Load a Unicode font (DejaVuSans)
+    font_path = "DejaVuSans.ttf"
+    font_url = "https://github.com/dejavu-fonts/dejavu-fonts/raw/version_2_37/ttf/DejaVuSans.ttf"
+    if not os.path.exists(font_path):
+        try:
+            r = requests.get(font_url)
+            if r.status_code == 200:
+                with open(font_path, "wb") as f:
+                    f.write(r.content)
+        except Exception as e:
+            st.error("Font download failed, using default Arial font.")
+            font_path = None
+
+    if os.path.exists(font_path):
+        pdf.add_font("DejaVu", fname=font_path, uni=True)
+        pdf.set_font("DejaVu", size=12)
+    else:
+        pdf.set_font("Arial", size=12)
+
     for msg in messages:
         role = msg.get('role', '')
         content = msg.get('message', '')
         if role.lower() == 'user':
-            pdf.set_text_color(0, 0, 255)  # Blue for user
+            pdf.set_text_color(0, 0, 255)
         else:
-            pdf.set_text_color(0, 128, 0)  # Green for agent
+            pdf.set_text_color(0, 128, 0)
         pdf.multi_cell(0, 10, f"{role}: {content}")
         pdf.ln(3)
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
-    return io.BytesIO(pdf_bytes)
+
+    pdf_output = pdf.output(dest='S').encode('utf-8')
+    return io.BytesIO(pdf_output)
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
@@ -149,8 +166,6 @@ if prompt:
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
-
-    # Balloon effect on answer completion
     st.balloons()
 
 # --- Save session ---
@@ -158,7 +173,7 @@ if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
 
-# --- Sidebar Download Chat Button ---
+# --- Sidebar Download Chat ---
 if st.sidebar.button("Download Chat as PDF"):
     pdf_file = generate_chat_pdf(st.session_state.current_session)
     st.sidebar.download_button(
@@ -168,7 +183,6 @@ if st.sidebar.button("Download Chat as PDF"):
         mime="application/pdf"
     )
 
-# --- Sidebar helper ---
 st.sidebar.markdown(
     "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
