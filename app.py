@@ -116,7 +116,7 @@ def generate_chat_pdf(messages):
             pdf.set_text_color(0, 128, 0)  # Green for agent
         pdf.multi_cell(0, 10, f"{role}: {content}")
         pdf.ln(3)
-    pdf_bytes = pdf.output(dest='S').encode('utf-8', errors='ignore')
+   pdf_bytes = pdf.output(dest='S').encode('latin1', 'ignore')
     return io.BytesIO(pdf_bytes)
 
 # --- Chat input ---
@@ -173,4 +173,5 @@ st.sidebar.markdown(
     "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
     unsafe_allow_html=True
 )
+
 
