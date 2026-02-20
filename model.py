@@ -1,108 +1,145 @@
+# model.py
+
 import os
 import pickle
 from groq import Groq
-from llama_index.core.schema import TextNode
-from llama_index.core.base.embeddings.base import BaseEmbedding
-from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
-import pdfplumber
-from PIL import Image
-import pytesseract
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.settings import Settings
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+# =========================
+# GROQ CLIENT
+# =========================
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
-class CustomEmbedding(BaseEmbedding):
-    def _get_query_embedding(self, query: str) -> list[float]:
-        return [0.0] * 512
-    async def _aget_query_embedding(self, query: str) -> list[float]:
-        return [0.0] * 512
-    def _get_text_embedding(self, text: str) -> list[float]:
-        return [0.0] * 512
+# =========================
+# EMBEDDING MODEL (REAL — not fake)
+# Works on Streamlit Cloud
+# =========================
+embed_model = HuggingFaceEmbedding(
+    model_name="BAAI/bge-small-en-v1.5"
+)
 
+# Apply globally
+Settings.embed_model = embed_model
+Settings.node_parser = SentenceSplitter(
+    chunk_size=512,
+    chunk_overlap=80,
+)
+
+# =========================
+# LOAD DOCUMENTS SAFELY
+# =========================
 def load_documents():
     folder = "Sanjukta"
     if os.path.exists(folder):
         return SimpleDirectoryReader(folder).load_data()
     else:
-        print(f"⚠ Folder '{folder}' not found. Continuing with empty documents.")
+        print(f"⚠ Folder '{folder}' not found.")
         return []
 
+# =========================
+# CREATE OR LOAD INDEX
+# (Streamlit-friendly)
+# =========================
 def create_or_load_index():
     index_file = "index.pkl"
-    if os.path.exists(index_file):
-        with open(index_file, "rb") as f:
-            index = pickle.load(f)
-    else:
+
+    try:
+        if os.path.exists(index_file):
+            with open(index_file, "rb") as f:
+                index = pickle.load(f)
+        else:
+            docs = load_documents()
+            index = VectorStoreIndex.from_documents(docs)
+            with open(index_file, "wb") as f:
+                pickle.dump(index, f)
+    except Exception as e:
+        print("⚠ Rebuilding index due to error:", e)
         docs = load_documents()
-        embedding_model = CustomEmbedding()
-        index = VectorStoreIndex(docs, embed_model=embedding_model)
-        with open(index_file, "wb") as f:
-            pickle.dump(index, f)
+        index = VectorStoreIndex.from_documents(docs)
+
     return index
 
+# =========================
+# GROQ CALL
+# =========================
 def query_groq_api(prompt: str):
     try:
         chat_completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
-        err_msg = str(e)
-        if "RateLimit" in err_msg:
-            return "⚛ Sorry, the API rate limit has been reached. Please try again in a few moments."
-        return f"⚛ An unexpected error occurred: {err_msg}"
+        return f"⚛ Error: {str(e)}"
 
-def summarize_messages(messages):
-    text = ""
-    for msg in messages:
-        text += f"{msg['role']}: {msg['message']}\n"
-    prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
-    return query_groq_api(prompt)
+# =========================
+# OPTIONAL LIVE SEARCH
+# (currently safe fallback)
+# =========================
+def live_search(query: str) -> str:
+    """
+    Later you can connect Tavily or Serper here.
+    For now returns empty so app never crashes.
+    """
+    return ""
 
-def rag_retrieve(query: str) -> list[str]:
-    return []
+# =========================
+# MAIN RAG PIPELINE
+# =========================
+def chat_with_agent(query, index, chat_history, memory_limit=12):
 
-def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
-    retriever: BaseRetriever = index.as_retriever()
+    # ---- RETRIEVE ----
+    retriever = index.as_retriever(similarity_top_k=4)
     nodes = retriever.retrieve(query)
-    context = " ".join([node.get_text() for node in nodes if isinstance(node, TextNode)])
 
-    if extra_file_content:
-        context += f"\nAdditional context from uploaded file:\n{extra_file_content}"
+    # Debug log (visible in Streamlit logs)
+    print("\n🔍 Retrieved chunks:")
+    for i, n in enumerate(nodes):
+        print(f"\n--- Chunk {i+1} ---\n{n.get_text()[:300]}")
 
-    rag_results = rag_retrieve(query)
-    rag_context = "\n".join(rag_results)
+    context = "\n\n".join([n.get_text() for n in nodes])
 
-    full_context = context + "\n" + rag_context if rag_context else context
+    # ---- LIVE DATA ----
+    live_context = live_search(query)
 
+    # ---- MEMORY ----
     if len(chat_history) > memory_limit:
-        old_messages = chat_history[:-memory_limit]
         recent_messages = chat_history[-memory_limit:]
-        summary = summarize_messages(old_messages)
-        conversation_text = f"Summary of previous conversation: {summary}\n"
     else:
         recent_messages = chat_history
-        conversation_text = ""
+
+    conversation_text = ""
     for msg in recent_messages:
         conversation_text += f"{msg['role']}: {msg['message']}\n"
-    conversation_text += f"User: {query}\n"
 
-    prompt = (
-        f"Context from documents and files: {full_context}\n"
-        f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last query in context."
-    )
+    # ---- STRONG GROUNDED PROMPT ----
+    prompt = f"""
+You are a grounded AI assistant.
+
+STRICT RULES:
+- Answer ONLY from the provided context.
+- If answer is not in context, say: "I don't have enough information."
+- Do NOT use prior knowledge.
+- Be concise and factual.
+
+DOCUMENT CONTEXT:
+{context}
+
+LIVE DATA:
+{live_context}
+
+CONVERSATION:
+{conversation_text}
+
+USER QUESTION:
+{query}
+
+ANSWER:
+"""
+
     return query_groq_api(prompt)
-
-def extract_text_from_pdf(file):
-    text = ""
-    with pdfplumber.open(file) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text() or ""
-    return text.strip()
-
-def extract_text_from_image(file):
-    image = Image.open(file)
-    return pytesseract.image_to_string(image)
