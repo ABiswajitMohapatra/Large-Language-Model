@@ -2,6 +2,7 @@ streamlit
 groq
 python-dotenv
 fastembed
+onnxruntime
 pdfplumber
 pillow
 pytesseract
