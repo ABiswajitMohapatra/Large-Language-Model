@@ -1,12 +1,3 @@
-"""
-Core logic for the chatbot:
-- Loads documents (PDF / DOCX / TXT / images) and turns them into a searchable index
-  using FREE local embeddings (fastembed) - no embedding API key needed.
-- Talks to Groq for the actual chat completion. Uses Groq's built-in `groq/compound`
-  model, which automatically performs live web search server-side whenever a question
-  needs current/up-to-date information - no separate search API key required.
-"""
-
 import os
 import re
 import glob
@@ -24,7 +15,7 @@ try:
 except ImportError:
     docx = None
 
-load_dotenv()  # allows a local .env file to work when running on your own machine
+load_dotenv()
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -35,7 +26,7 @@ SUMMARY_MODEL = "llama-3.1-8b-instant"
 EMBED_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 EMBED_DIM = 384
 
-DOCS_FOLDER = "documents"  # put PDFs / DOCX / TXT / MD files here for the bot to learn from
+DOCS_FOLDER = "documents"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 100
 TOP_K = 3
@@ -43,8 +34,7 @@ MIN_SIMILARITY = 0.55
 
 
 def get_secret(key: str, default=None):
-    """Read a secret from Streamlit's secrets manager first (for Streamlit Cloud),
-    falling back to environment variables / .env (for local development)."""
+    """Read from Streamlit secrets first, then environment variables."""
     try:
         if key in st.secrets:
             return st.secrets[key]
@@ -56,9 +46,23 @@ def get_secret(key: str, default=None):
 GROQ_API_KEY = get_secret("GROQ_API_KEY")
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
+SYSTEM_PROMPT = """
+You are a helpful AI assistant.
+
+Answer naturally and directly.
+
+Never mention:
+- document retrieval
+- document context
+- web search
+- internal reasoning
+
+If information is unavailable, simply say you do not know.
+"""
+
 
 # ----------------------------------------------------------------------------
-# Embeddings (loaded once, cached)
+# Embeddings
 # ----------------------------------------------------------------------------
 
 @st.cache_resource(show_spinner=False)
@@ -96,7 +100,6 @@ def extract_text_from_image(file) -> str:
         image = Image.open(file)
         return pytesseract.image_to_string(image)
     except Exception:
-        # tesseract not installed / unreadable image - fail soft, don't crash the app
         return ""
 
 
@@ -122,10 +125,10 @@ def load_file(path_or_buffer, filename: str) -> str:
 
 
 def load_folder_documents(folder: str = DOCS_FOLDER):
-    """Read every supported file under `folder` -> list of (filename, text)."""
     docs = []
     if not os.path.isdir(folder):
         return docs
+
     for path in glob.glob(os.path.join(folder, "**", "*"), recursive=True):
         if os.path.isfile(path):
             filename = os.path.basename(path)
@@ -134,54 +137,72 @@ def load_folder_documents(folder: str = DOCS_FOLDER):
                     text = load_file(f, filename)
             except Exception:
                 text = ""
+
             if text.strip():
                 docs.append((filename, text))
+
     return docs
 
 
 # ----------------------------------------------------------------------------
-# Chunking + simple in-memory vector index
+# Chunking + vector index
 # ----------------------------------------------------------------------------
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
     text = re.sub(r"\s+", " ", text).strip()
     if not text:
         return []
+
     chunks = []
     start = 0
+
     while start < len(text):
         end = start + chunk_size
         chunks.append(text[start:end])
         start = end - overlap
+
     return [c for c in chunks if c.strip()]
 
 
 def empty_index():
-    return {"chunks": [], "sources": [], "embeddings": np.zeros((0, EMBED_DIM))}
+    return {
+        "chunks": [],
+        "sources": [],
+        "embeddings": np.zeros((0, EMBED_DIM))
+    }
 
 
 def build_index(documents):
-    """documents: list of (source_name, text) -> index dict."""
     chunks, sources = [], []
+
     for source, text in documents:
         for chunk in chunk_text(text):
             chunks.append(chunk)
             sources.append(source)
+
     if not chunks:
         return empty_index()
-    return {"chunks": chunks, "sources": sources, "embeddings": embed_texts(chunks)}
+
+    return {
+        "chunks": chunks,
+        "sources": sources,
+        "embeddings": embed_texts(chunks)
+    }
 
 
 def add_to_index(index, source_name: str, text: str):
-    """Return a NEW index dict with `text` added (does not mutate the original)."""
     new_chunks = chunk_text(text)
     if not new_chunks:
         return index
+
     new_vectors = embed_texts(new_chunks)
+
     merged_embeddings = (
-        new_vectors if index["embeddings"].shape[0] == 0
+        new_vectors
+        if index["embeddings"].shape[0] == 0
         else np.vstack([index["embeddings"], new_vectors])
     )
+
     return {
         "chunks": index["chunks"] + new_chunks,
         "sources": index["sources"] + [source_name] * len(new_chunks),
@@ -190,22 +211,25 @@ def add_to_index(index, source_name: str, text: str):
 
 
 def merge_indexes(*indexes):
-    """Combine several index dicts WITHOUT mutating any of them - used to combine
-    the shared base knowledge base with a user's session-only uploaded files."""
     chunks, sources, emb_parts = [], [], []
+
     for idx in indexes:
         chunks.extend(idx["chunks"])
         sources.extend(idx["sources"])
         if idx["embeddings"].shape[0] > 0:
             emb_parts.append(idx["embeddings"])
+
     embeddings = np.vstack(emb_parts) if emb_parts else np.zeros((0, EMBED_DIM))
-    return {"chunks": chunks, "sources": sources, "embeddings": embeddings}
+
+    return {
+        "chunks": chunks,
+        "sources": sources,
+        "embeddings": embeddings
+    }
 
 
 @st.cache_resource(show_spinner="Indexing your documents...")
 def get_base_index():
-    """The shared knowledge base built from the DOCS_FOLDER. Cached once per app
-    instance - never mutated afterwards, so it's safe to share across users."""
     documents = load_folder_documents()
     return build_index(documents)
 
@@ -213,15 +237,20 @@ def get_base_index():
 def retrieve(index, query: str, top_k: int = TOP_K):
     if index["embeddings"].shape[0] == 0 or not query.strip():
         return []
+
     q_vec = embed_texts([query])[0]
     emb = index["embeddings"]
+
     denom = np.linalg.norm(emb, axis=1) * np.linalg.norm(q_vec)
     denom[denom == 0] = 1e-8
+
     sims = (emb @ q_vec) / denom
     top_idx = np.argsort(sims)[::-1][:top_k]
+
     return [
         (index["chunks"][i], index["sources"][i], float(sims[i]))
-        for i in top_idx if sims[i] >= MIN_SIMILARITY
+        for i in top_idx
+        if sims[i] >= MIN_SIMILARITY
     ]
 
 
@@ -237,21 +266,14 @@ def query_groq(prompt: str) -> dict:
         }
 
     try:
-
         if len(prompt) > 12000:
             prompt = prompt[:12000]
 
         completion = groq_client.chat.completions.create(
             model=CHAT_MODEL,
             messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
             ],
             temperature=0.3,
             max_tokens=1500
@@ -268,8 +290,8 @@ def query_groq(prompt: str) -> dict:
             "web_used": False
         }
 
-def summarize_messages(messages):
 
+def summarize_messages(messages):
     if not messages:
         return ""
 
@@ -287,46 +309,35 @@ Summarize this conversation in under 200 words.
     return query_groq(prompt)["answer"]
 
 
-ddef chat_with_agent(
-        query,
-        index,
-        chat_history,
-        memory_limit=6,
-        extra_file_content=""
+def chat_with_agent(
+    query,
+    index,
+    chat_history,
+    memory_limit=6,
+    extra_file_content=""
 ):
-
     retrieved = retrieve(index, query)
 
     doc_context = "\n\n".join(
-        chunk
-        for chunk, src, score in retrieved
+        chunk for chunk, src, score in retrieved
     )
-
     doc_context = doc_context[:3000]
 
     if len(chat_history) > memory_limit:
-
-        summary = summarize_messages(
-            chat_history[:-memory_limit]
-        )
-
+        summary = summarize_messages(chat_history[:-memory_limit])
         recent_messages = chat_history[-memory_limit:]
-
         conversation_text = summary + "\n"
-
     else:
-
         recent_messages = chat_history
         conversation_text = ""
 
     for msg in recent_messages:
-
-        conversation_text += (
-            f"{msg['role']}: "
-            f"{msg['message']}\n"
-        )
+        conversation_text += f"{msg['role']}: {msg['message']}\n"
 
     conversation_text = conversation_text[-3000:]
+
+    if extra_file_content:
+        doc_context = (doc_context + "\n\n" + extra_file_content[:2000]).strip()
 
     prompt = f"""
 Document Information:
@@ -346,29 +357,6 @@ Answer the question clearly.
 
     result = query_groq(prompt)
 
-    doc_sources = sorted(
-        set(
-            src
-            for _, src, _
-            in retrieved
-        )
-    )
+    doc_sources = sorted(set(src for _, src, _ in retrieved))
 
-    return (
-        result["answer"],
-        doc_sources,
-        result["web_used"]
-    )
-SYSTEM_PROMPT = """
-You are a helpful AI assistant.
-
-Answer naturally and directly.
-
-Never mention:
-- document retrieval
-- document context
-- web search
-- internal reasoning
-
-If information is unavailable, simply say you do not know.
-"""
+    return result["answer"], doc_sources, result["web_used"]
