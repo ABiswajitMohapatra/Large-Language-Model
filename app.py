@@ -41,6 +41,12 @@ div[data-testid="stHorizontalBlock"] {
     color: blue !important;
     font-size: 14px;
 }
+
+.meta-tag {
+    color: #888;
+    font-size: 12px;
+    margin: 0 0 8px 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -73,8 +79,13 @@ if uploaded_file is not None:
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
 # --- Message handler ---
-def add_message(role, message):
-    st.session_state.current_session.append({"role": role, "message": message})
+def add_message(role, message, sources=None, web_used=False):
+    st.session_state.current_session.append({
+        "role": role,
+        "message": message,
+        "sources": sources or [],
+        "web_used": web_used
+    })
 
 CUSTOM_RESPONSES = {
     "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
@@ -92,6 +103,18 @@ def check_custom_response(user_input: str):
             return response
     return None
 
+def render_meta_tag(sources, web_used):
+    tags = []
+    if web_used:
+        tags.append("🌐 used live web search")
+    if sources:
+        tags.append(f"📄 sources: {', '.join(sources)}")
+    if tags:
+        st.markdown(
+            f"<div class='meta-tag'>{' · '.join(tags)}</div>",
+            unsafe_allow_html=True
+        )
+
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg["role"] == "Agent":
@@ -99,6 +122,7 @@ for msg in st.session_state.current_session:
             f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>",
             unsafe_allow_html=True
         )
+        render_meta_tag(msg.get("sources"), msg.get("web_used"))
     else:
         st.markdown(
             f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>",
@@ -128,6 +152,8 @@ if prompt:
     typed_text = ""
 
     custom_reply = check_custom_response(prompt)
+    sources = []
+    web_used = False
 
     if custom_reply:
         final_answer = custom_reply
@@ -136,9 +162,10 @@ if prompt:
         and st.session_state.uploaded_pdf_text
     ):
         answer, sources, web_used = chat_with_agent(
-            f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
+            "Please provide a summary of this document.",
             st.session_state.index,
-            st.session_state.current_session
+            st.session_state.current_session,
+            extra_file_content=st.session_state.uploaded_pdf_text
         )
         final_answer = answer
     else:
@@ -157,7 +184,8 @@ if prompt:
         )
         time.sleep(0.002)
 
-    add_message("Agent", final_answer)
+    render_meta_tag(sources, web_used)
+    add_message("Agent", final_answer, sources=sources, web_used=web_used)
     st.balloons()
 
 # --- Save session ---
