@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import datetime
 import numpy as np
 import streamlit as st
 from groq import Groq
@@ -15,6 +16,14 @@ try:
 except ImportError:
     docx = None
 
+try:
+    from ddgs import DDGS
+except ImportError:
+    try:
+        from duckduckgo_search import DDGS
+    except ImportError:
+        DDGS = None
+
 load_dotenv()
 
 CHAT_MODEL = "llama-3.3-70b-versatile"
@@ -27,10 +36,26 @@ CHUNK_OVERLAP = 100
 TOP_K = 3
 MIN_SIMILARITY = 0.55
 
+WEB_SEARCH_MAX_RESULTS = 5
+WEB_SEARCH_TIMEOUT = 8
+
+TIME_SENSITIVE_PATTERNS = re.compile(
+    r"\b(today|yesterday|tonight|this week|this month|this year|"
+    r"latest|breaking|current|currently|now|recent|recently|"
+    r"news|update|score|weather|price|stock|trending|"
+    r"202\d|who is the (current|new)|election|live)\b",
+    re.IGNORECASE
+)
+
 SYSTEM_PROMPT = """
 You are a helpful AI assistant.
 Answer naturally and directly.
-If information is unavailable, simply say you do not know.
+You may be given "Web Search Results" containing live information retrieved just now.
+Treat that information as more current and reliable than your own training data,
+especially for anything about today's date, recent events, news, prices, or scores.
+If the web results conflict with what you already know, trust the web results and
+mention that the information is current as of the search.
+If information is unavailable even after checking the web results, simply say you do not know.
 """
 
 def get_secret(key: str, default=None):
@@ -169,6 +194,43 @@ def retrieve(index, query: str, top_k: int = TOP_K):
         if sims[i] >= MIN_SIMILARITY
     ]
 
+def needs_web_search(query: str, retrieved) -> bool:
+    """Decide whether to hit the live web: either the question looks
+    time-sensitive, or local document retrieval came up empty."""
+    if TIME_SENSITIVE_PATTERNS.search(query):
+        return True
+    if not retrieved:
+        return True
+    return False
+
+def web_search(query: str, max_results: int = WEB_SEARCH_MAX_RESULTS) -> list[dict]:
+    """Hit DuckDuckGo for live results. Returns a list of
+    {title, href, body} dicts, or [] on any failure."""
+    if DDGS is None:
+        return []
+
+    try:
+        with DDGS(timeout=WEB_SEARCH_TIMEOUT) as ddgs:
+            results = ddgs.text(query, max_results=max_results)
+        return results or []
+    except Exception:
+        return []
+
+def format_web_context(results: list[dict]) -> str:
+    if not results:
+        return ""
+
+    today = datetime.date.today().strftime("%A, %B %d, %Y")
+    lines = [f"(Live web search results, fetched today — {today})"]
+
+    for r in results:
+        title = r.get("title", "").strip()
+        body = r.get("body", "").strip()
+        href = r.get("href", "").strip()
+        lines.append(f"- {title}: {body} (source: {href})")
+
+    return "\n".join(lines)
+
 def query_groq(prompt: str) -> dict:
     if groq_client is None:
         return {"answer": "GROQ_API_KEY not configured.", "web_used": False}
@@ -207,6 +269,13 @@ def chat_with_agent(query, index, chat_history, memory_limit=6, extra_file_conte
 
     doc_context = "\n\n".join(chunk for chunk, src, score in retrieved)[:3000]
 
+    web_used = False
+    web_context = ""
+    if needs_web_search(query, retrieved):
+        web_results = web_search(query)
+        web_context = format_web_context(web_results)
+        web_used = bool(web_context)
+
     if len(chat_history) > memory_limit:
         summary = summarize_messages(chat_history[:-memory_limit])
         recent_messages = chat_history[-memory_limit:]
@@ -223,9 +292,16 @@ def chat_with_agent(query, index, chat_history, memory_limit=6, extra_file_conte
     if extra_file_content:
         doc_context = (doc_context + "\n\n" + extra_file_content[:2000]).strip()
 
+    today_str = datetime.date.today().strftime("%A, %B %d, %Y")
+
     prompt = f"""
+Today's date is {today_str}.
+
 Document Information:
 {doc_context}
+
+Web Search Results:
+{web_context if web_context else "(none)"}
 
 Conversation:
 {conversation_text}
@@ -239,4 +315,4 @@ Answer the question clearly.
     result = query_groq(prompt)
     doc_sources = sorted(set(src for _, src, _ in retrieved))
 
-    return result["answer"], doc_sources, result["web_used"]
+    return result["answer"], doc_sources, web_used
