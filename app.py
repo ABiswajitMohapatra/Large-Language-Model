@@ -1,151 +1,83 @@
 import streamlit as st
-from model import load_documents, create_or_load_index, chat_with_agent
-import pdfplumber
-import time
-from fpdf import FPDF
-import io
+import model
 
-st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
+st.set_page_config(page_title="My RAG Chatbot", page_icon="🤖", layout="wide")
+st.title("🤖 My Chatbot")
+st.caption("Powered by Groq · live web search · your own documents")
 
-# --- Initialize index and sessions ---
-if 'index' not in st.session_state:
-    st.session_state.index = create_or_load_index()
-if 'sessions' not in st.session_state:
-    st.session_state.sessions = []
-if 'current_session' not in st.session_state:
-    st.session_state.current_session = []
+if not model.GROQ_API_KEY:
+    st.error(
+        "GROQ_API_KEY is not set. Add it to a local `.env` file for development, "
+        "or under **Settings → Secrets** in Streamlit Cloud for the deployed app."
+    )
+    st.stop()
 
-# --- Mobile-friendly CSS ---
-st.markdown("""
-<style>
-/* Reduce vertical spacing of messages */
-div.message {
-    margin: 2px 0;
-    font-size: 17px;
-}
+# --- session state -----------------------------------------------------------
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "session_index" not in st.session_state:
+    st.session_state.session_index = model.empty_index()
+if "added_files" not in st.session_state:
+    st.session_state.added_files = set()
 
-/* Adjust chat input block */
-div[data-testid="stHorizontalBlock"] {
-    margin-bottom: 0px;
-    padding-bottom: 0px;
-}
+base_index = model.get_base_index()  # shared knowledge base from the `documents/` folder
 
-/* Optional: slightly smaller sidebar on mobile */
-@media only screen and (max-width: 600px) {
-    section[data-testid="stSidebar"] {
-        max-width: 250px;
-    }
-}
+# --- sidebar -------------------------------------------------------------
+with st.sidebar:
+    st.header("📄 Add your own files")
+    st.caption("Files uploaded here are only visible in this session and aren't saved permanently.")
+    uploaded_files = st.file_uploader(
+        "PDF, DOCX, TXT, MD, or images",
+        type=["pdf", "docx", "txt", "md", "png", "jpg", "jpeg"],
+        accept_multiple_files=True,
+    )
+    if uploaded_files:
+        for f in uploaded_files:
+            if f.name not in st.session_state.added_files:
+                text = model.load_file(f, f.name)
+                if text.strip():
+                    st.session_state.session_index = model.add_to_index(
+                        st.session_state.session_index, f.name, text
+                    )
+                    st.session_state.added_files.add(f.name)
+                    st.success(f"Added '{f.name}' to this session's knowledge")
+                else:
+                    st.warning(f"Couldn't extract any text from '{f.name}'")
 
-/* Blue color for sidebar helper text */
-.sidebar-helper {
-    color: blue !important;
-    font-size: 14px;
-}
-</style>
-""", unsafe_allow_html=True)
+    if st.session_state.added_files:
+        st.write("Session files:", ", ".join(sorted(st.session_state.added_files)))
 
-# --- Sidebar ---
-st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
-if st.sidebar.button("New Chat"):
-    st.session_state.current_session = []
-if st.sidebar.button("Clear Chat"):
-    st.session_state.current_session = []
+    st.divider()
+    if st.button("🗑️ Clear conversation"):
+        st.session_state.chat_history = []
+        st.rerun()
 
-for i, sess in enumerate(st.session_state.sessions):
-    if st.sidebar.button(f"Session {i+1}"):
-        st.session_state.current_session = sess.copy()
+# --- chat history ----------------------------------------------------------
+for msg in st.session_state.chat_history:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["message"])
 
-# Upload icon only
-uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
-if uploaded_file and "uploaded_pdf_text" not in st.session_state:
-    extracted_text = ""
-    with pdfplumber.open(uploaded_file) as pdf:
-        for page in pdf.pages:
-            extracted_text += page.extract_text() or ""
-    st.session_state.uploaded_pdf_text = extracted_text.strip()
+# --- chat input --------------------------------------------------------------
+user_query = st.chat_input("Ask me anything...")
+if user_query:
+    st.session_state.chat_history.append({"role": "user", "message": user_query})
+    with st.chat_message("user"):
+        st.markdown(user_query)
 
-# --- Message handler ---
-def add_message(role, message):
-    st.session_state.current_session.append({"role": role, "message": message})
+    combined_index = model.merge_indexes(base_index, st.session_state.session_index)
 
-CUSTOM_RESPONSES = {
-    "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
-    "creator": "My creator is Biswajit Mohapatra.",
-    "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
-    "father": "My father is Biswajit Mohapatra.",
-    "who trained you": "I was trained by Biswajit Mohapatra.",
-    "trained": "I was trained and fine-tuned by Biswajit Mohapatra."
-}
-
-def check_custom_response(user_input: str):
-    normalized = user_input.lower()
-    for keyword, response in CUSTOM_RESPONSES.items():
-        if keyword in normalized:
-            return response
-    return None
-
-# --- Display old messages ---
-for msg in st.session_state.current_session:
-    if msg['role'] == "Agent":
-        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
-    else:
-        st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
-
-# --- Static header above chat area ---
-if 'header_rendered' not in st.session_state:
-    st.markdown("""
-    <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
-        What can I help with?😊
-    </div>
-    """, unsafe_allow_html=True)
-    st.session_state.header_rendered = True
-
-# --- Chat input ---
-prompt = st.chat_input("Say something...", key="main_chat_input")
-
-if prompt:
-    add_message("User", prompt)
-    st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
-
-    placeholder = st.empty()
-    typed_text = ""
-
-    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) and "uploaded_pdf_text" in st.session_state:
-        if st.session_state.uploaded_pdf_text:
-            final_answer = chat_with_agent(
-                f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
-                st.session_state.index,
-                st.session_state.current_session
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            answer, doc_sources, used_web = model.chat_with_agent(
+                user_query, combined_index, st.session_state.chat_history[:-1]
             )
-        else:
-            final_answer = "⚛ Sorry, no readable text was found in your PDF."
-    else:
-        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
-            prompt, st.session_state.index, st.session_state.current_session
-        )
+        st.markdown(answer)
+        tags = []
+        if used_web:
+            tags.append("🌐 used live web search")
+        if doc_sources:
+            tags.append(f"📄 referenced: {', '.join(doc_sources)}")
+        if tags:
+            st.caption(" · ".join(tags))
 
-    for char in final_answer:
-        typed_text += char
-        placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
-        time.sleep(0.002)
-
-    add_message("Agent", final_answer)
-
-    # Balloon effect on answer completion
-    st.balloons()
-
-# --- Save session ---
-if st.sidebar.button("Save Session"):
-    if st.session_state.current_session not in st.session_state.sessions:
-        st.session_state.sessions.append(st.session_state.current_session.copy())
-
-
-# --- Sidebar helper ---
-st.sidebar.markdown(
-    "<p class='sidebar-helper'>Right-click on the chat input to access emojis and additional features.</p>",
-    unsafe_allow_html=True
-)
-
-
-
+    st.session_state.chat_history.append({"role": "assistant", "message": answer})
