@@ -80,4 +80,9 @@ if user_query:
         if tags:
             st.caption(" · ".join(tags))
 
-    st.session_state.chat_history.append({"role": "assistant", "message": answer})
+MAX_HISTORY = 20
+
+if len(st.session_state.chat_history) > MAX_HISTORY:
+    st.session_state.chat_history = (
+        st.session_state.chat_history[-MAX_HISTORY:]
+    )
