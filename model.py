@@ -1,5 +1,4 @@
 import streamlit as st
-from model import load_documents, create_or_load_index, chat_with_agent
 import pdfplumber
 import time
 from fpdf import FPDF
