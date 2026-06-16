@@ -1,43 +1,37 @@
 import streamlit as st
-from model import load_documents, create_or_load_index, chat_with_agent
+from model import get_base_index, chat_with_agent
 import pdfplumber
 import time
-from fpdf import FPDF
-import io
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
 # --- Initialize index and sessions ---
-if 'index' not in st.session_state:
-    st.session_state.index = create_or_load_index()
-if 'sessions' not in st.session_state:
+if "index" not in st.session_state:
+    st.session_state.index = get_base_index()
+if "sessions" not in st.session_state:
     st.session_state.sessions = []
-if 'current_session' not in st.session_state:
+if "current_session" not in st.session_state:
     st.session_state.current_session = []
 
 # --- Mobile-friendly CSS ---
 st.markdown("""
 <style>
-/* Reduce vertical spacing of messages */
 div.message {
     margin: 2px 0;
     font-size: 17px;
 }
 
-/* Adjust chat input block */
 div[data-testid="stHorizontalBlock"] {
     margin-bottom: 0px;
     padding-bottom: 0px;
 }
 
-/* Optional: slightly smaller sidebar on mobile */
 @media only screen and (max-width: 600px) {
     section[data-testid="stSidebar"] {
         max-width: 250px;
     }
 }
 
-/* Blue color for sidebar helper text */
 .sidebar-helper {
     color: blue !important;
     font-size: 14px;
@@ -47,8 +41,10 @@ div[data-testid="stHorizontalBlock"] {
 
 # --- Sidebar ---
 st.sidebar.title("B͎i͎s͎w͎a͎L͎e͎x͎⚛")
+
 if st.sidebar.button("New Chat"):
     st.session_state.current_session = []
+
 if st.sidebar.button("Clear Chat"):
     st.session_state.current_session = []
 
@@ -56,13 +52,17 @@ for i, sess in enumerate(st.session_state.sessions):
     if st.sidebar.button(f"Session {i+1}"):
         st.session_state.current_session = sess.copy()
 
-# Upload icon only
-uploaded_file = st.sidebar.file_uploader("", label_visibility="collapsed", type=["pdf"])
-if uploaded_file and "uploaded_pdf_text" not in st.session_state:
+uploaded_file = st.sidebar.file_uploader(
+    "",
+    label_visibility="collapsed",
+    type=["pdf"]
+)
+
+if uploaded_file:
     extracted_text = ""
     with pdfplumber.open(uploaded_file) as pdf:
         for page in pdf.pages:
-            extracted_text += page.extract_text() or ""
+            extracted_text += (page.extract_text() or "") + "\n"
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
 # --- Message handler ---
@@ -87,59 +87,77 @@ def check_custom_response(user_input: str):
 
 # --- Display old messages ---
 for msg in st.session_state.current_session:
-    if msg['role'] == "Agent":
-        st.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+    if msg["role"] == "Agent":
+        st.markdown(
+            f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>",
+            unsafe_allow_html=True
+        )
     else:
-        st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>",
+            unsafe_allow_html=True
+        )
 
 # --- Static header above chat area ---
-if 'header_rendered' not in st.session_state:
-    st.markdown("""
-    <div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
-        What can I help with?😊
-    </div>
-    """, unsafe_allow_html=True)
-    st.session_state.header_rendered = True
+st.markdown("""
+<div style='text-align:center; font-size:28px; font-weight:bold; color:#b0b0b0; margin-bottom:20px;'>
+    What can I help with? 😊
+</div>
+""", unsafe_allow_html=True)
 
 # --- Chat input ---
 prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
     add_message("User", prompt)
-    st.markdown(f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>",
+        unsafe_allow_html=True
+    )
 
     placeholder = st.empty()
     typed_text = ""
 
-    if ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower()) and "uploaded_pdf_text" in st.session_state:
+    custom_reply = check_custom_response(prompt)
+
+    if custom_reply:
+        final_answer = custom_reply
+    elif (
+        ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower())
+        and "uploaded_pdf_text" in st.session_state
+    ):
         if st.session_state.uploaded_pdf_text:
-            final_answer = chat_with_agent(
+            answer, sources, web_used = chat_with_agent(
                 f"Please provide a summary of this document:\n\n{st.session_state.uploaded_pdf_text}",
                 st.session_state.index,
                 st.session_state.current_session
             )
+            final_answer = answer
         else:
             final_answer = "⚛ Sorry, no readable text was found in your PDF."
     else:
-        final_answer = check_custom_response(prompt.lower()) or chat_with_agent(
-            prompt, st.session_state.index, st.session_state.current_session
+        answer, sources, web_used = chat_with_agent(
+            prompt,
+            st.session_state.index,
+            st.session_state.current_session
         )
+        final_answer = answer
 
     for char in final_answer:
         typed_text += char
-        placeholder.markdown(f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>", unsafe_allow_html=True)
+        placeholder.markdown(
+            f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>",
+            unsafe_allow_html=True
+        )
         time.sleep(0.002)
 
     add_message("Agent", final_answer)
-
-    # Balloon effect on answer completion
     st.balloons()
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
     if st.session_state.current_session not in st.session_state.sessions:
         st.session_state.sessions.append(st.session_state.current_session.copy())
-
 
 # --- Sidebar helper ---
 st.sidebar.markdown(
