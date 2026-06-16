@@ -30,16 +30,16 @@ load_dotenv()  # allows a local .env file to work when running on your own machi
 # Configuration
 # ----------------------------------------------------------------------------
 
-CHAT_MODEL = "groq/compound"          # built-in, automatic web search when needed
-SUMMARY_MODEL = "llama-3.3-70b-versatile"  # cheaper/faster, used only for summarizing history
+CHAT_MODEL = "llama-3.3-70b-versatile"
+SUMMARY_MODEL = "llama-3.1-8b-instant"
 EMBED_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 EMBED_DIM = 384
 
 DOCS_FOLDER = "documents"  # put PDFs / DOCX / TXT / MD files here for the bot to learn from
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 150
-TOP_K = 4
-MIN_SIMILARITY = 0.2
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 100
+TOP_K = 3
+MIN_SIMILARITY = 0.55
 
 
 def get_secret(key: str, default=None):
@@ -229,73 +229,146 @@ def retrieve(index, query: str, top_k: int = TOP_K):
 # Groq chat
 # ----------------------------------------------------------------------------
 
-def query_groq(prompt: str, use_web_search: bool = True) -> dict:
-    """Returns {"answer": str, "web_used": bool}."""
+def query_groq(prompt: str) -> dict:
     if groq_client is None:
-        return {"answer": "⚛ GROQ_API_KEY is not set. Add it to .env (local) or "
-                           "Settings -> Secrets (Streamlit Cloud).", "web_used": False}
+        return {
+            "answer": "GROQ_API_KEY not configured.",
+            "web_used": False
+        }
+
     try:
-        kwargs = {}
-        model = CHAT_MODEL if use_web_search else SUMMARY_MODEL
-        if use_web_search:
-            kwargs["compound_custom"] = {"tools": {"enabled_tools": ["web_search"]}}
+
+        if len(prompt) > 12000:
+            prompt = prompt[:12000]
 
         completion = groq_client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            **kwargs,
+            model=CHAT_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=1500
         )
-        message = completion.choices[0].message
-        executed_tools = getattr(message, "executed_tools", None)
-        return {"answer": message.content, "web_used": bool(executed_tools)}
+
+        return {
+            "answer": completion.choices[0].message.content,
+            "web_used": False
+        }
 
     except Exception as e:
-        err_msg = str(e)
-        if "rate" in err_msg.lower() or "429" in err_msg:
-            return {"answer": "⚛ Sorry, the Groq API rate limit has been reached. "
-                               "Please try again in a few moments.", "web_used": False}
-        return {"answer": f"⚛ An unexpected error occurred: {err_msg}", "web_used": False}
-
+        return {
+            "answer": f"Error: {str(e)}",
+            "web_used": False
+        }
 
 def summarize_messages(messages):
-    text = "\n".join(f"{m['role']}: {m['message']}" for m in messages)
-    prompt = f"Summarize the following conversation concisely:\n{text}\nSummary:"
-    return query_groq(prompt, use_web_search=False)["answer"]
+
+    if not messages:
+        return ""
+
+    text = "\n".join(
+        f"{m['role']}: {m['message']}"
+        for m in messages
+    )
+
+    prompt = f"""
+Summarize this conversation in under 200 words.
+
+{text}
+"""
+
+    return query_groq(prompt)["answer"]
 
 
-def chat_with_agent(query, index, chat_history, memory_limit=12, extra_file_content=""):
-    """Returns (answer: str, doc_sources: list[str], web_used: bool)."""
+ddef chat_with_agent(
+        query,
+        index,
+        chat_history,
+        memory_limit=6,
+        extra_file_content=""
+):
+
     retrieved = retrieve(index, query)
-    doc_context = "\n\n".join(f"[From {src}]: {chunk}" for chunk, src, _ in retrieved)
 
-    if extra_file_content:
-        doc_context += f"\n\nAdditional context from an uploaded file:\n{extra_file_content}"
+    doc_context = "\n\n".join(
+        chunk
+        for chunk, src, score in retrieved
+    )
+
+    doc_context = doc_context[:3000]
 
     if len(chat_history) > memory_limit:
-        old_messages = chat_history[:-memory_limit]
+
+        summary = summarize_messages(
+            chat_history[:-memory_limit]
+        )
+
         recent_messages = chat_history[-memory_limit:]
-        summary = summarize_messages(old_messages)
-        conversation_text = f"Summary of earlier conversation: {summary}\n"
+
+        conversation_text = summary + "\n"
+
     else:
+
         recent_messages = chat_history
         conversation_text = ""
 
     for msg in recent_messages:
-        conversation_text += f"{msg['role']}: {msg['message']}\n"
-    conversation_text += f"User: {query}\n"
 
-    prompt = (
-        "You are a helpful assistant with two sources of extra context: (1) content "
-        "retrieved from the user's own documents below, and (2) live web search, which "
-        "you should use automatically whenever the question needs current, recent, or "
-        "up-to-date information that you might not already know.\n\n"
-        f"Context from the user's documents:\n"
-        f"{doc_context if doc_context else '(no relevant document context found)'}\n\n"
-        f"Conversation so far:\n{conversation_text}\n"
-        "Answer the user's last message. Prefer the document context when it's relevant; "
-        "use web search for anything time-sensitive or current."
+        conversation_text += (
+            f"{msg['role']}: "
+            f"{msg['message']}\n"
+        )
+
+    conversation_text = conversation_text[-3000:]
+
+    prompt = f"""
+Document Information:
+
+{doc_context}
+
+Conversation:
+
+{conversation_text}
+
+User Question:
+
+{query}
+
+Answer the question clearly.
+"""
+
+    result = query_groq(prompt)
+
+    doc_sources = sorted(
+        set(
+            src
+            for _, src, _
+            in retrieved
+        )
     )
 
-    result = query_groq(prompt, use_web_search=True)
-    doc_sources = sorted(set(src for _, src, _ in retrieved))
-    return result["answer"], doc_sources, result["web_used"]
+    return (
+        result["answer"],
+        doc_sources,
+        result["web_used"]
+    )
+SYSTEM_PROMPT = """
+You are a helpful AI assistant.
+
+Answer naturally and directly.
+
+Never mention:
+- document retrieval
+- document context
+- web search
+- internal reasoning
+
+If information is unavailable, simply say you do not know.
+"""
