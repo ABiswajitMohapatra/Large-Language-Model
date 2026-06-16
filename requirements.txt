@@ -1,10 +1,9 @@
 streamlit
 groq
-llama-index
-llama-index-embeddings-huggingface
-sentence-transformers
-pypdf
+python-dotenv
+fastembed
 pdfplumber
+pillow
 pytesseract
-Pillow
-fpdf
+python-docx
+numpy
