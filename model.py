@@ -16,13 +16,7 @@ try:
 except ImportError:
     docx = None
 
-try:
-    from ddgs import DDGS
-except ImportError:
-    try:
-        from duckduckgo_search import DDGS
-    except ImportError:
-        DDGS = None
+import requests
 
 load_dotenv()
 
@@ -95,6 +89,9 @@ def get_secret(key: str, default=None):
 
 GROQ_API_KEY = get_secret("GROQ_API_KEY")
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+
+TAVILY_API_KEY = get_secret("TAVILY_API_KEY")
+TAVILY_URL = "https://api.tavily.com/search"
 
 
 @st.cache_resource(show_spinner=False)
@@ -270,32 +267,48 @@ def needs_web_search(query: str, retrieved) -> bool:
     return False
 
 
-def web_search(query: str, max_results: int = WEB_SEARCH_MAX_RESULTS) -> list[dict]:
-    """Hit DuckDuckGo for live results. Returns a list of
-    {title, href, body} dicts, or [] on any failure."""
-    if DDGS is None:
-        return []
+def web_search(query: str, max_results: int = WEB_SEARCH_MAX_RESULTS) -> dict:
+    """Query the Tavily Search API - built specifically for feeding LLMs,
+    so results come pre-cleaned with a built-in AI-generated summary
+    ('answer') plus supporting source snippets. Returns {} on any failure
+    or if TAVILY_API_KEY isn't set."""
+    if not TAVILY_API_KEY:
+        return {}
 
     try:
-        with DDGS(timeout=WEB_SEARCH_TIMEOUT) as ddgs:
-            results = ddgs.text(query, max_results=max_results)
-        return results or []
+        resp = requests.post(
+            TAVILY_URL,
+            json={
+                "api_key": TAVILY_API_KEY,
+                "query": query,
+                "search_depth": "advanced",
+                "include_answer": True,
+                "max_results": max_results,
+            },
+            timeout=WEB_SEARCH_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json()
     except Exception:
-        return []
+        return {}
 
 
-def format_web_context(results: list[dict]) -> str:
-    if not results:
+def format_web_context(tavily_result: dict) -> str:
+    if not tavily_result:
         return ""
 
     today = datetime.date.today().strftime("%A, %B %d, %Y")
-    lines = [f"(Live web search results, fetched today — {today})"]
+    lines = [f"(Live web search results, fetched today - {today})"]
 
-    for r in results:
+    quick_answer = tavily_result.get("answer")
+    if quick_answer:
+        lines.append(f"Quick answer: {quick_answer}")
+
+    for r in tavily_result.get("results", []):
         title = r.get("title", "").strip()
-        body = r.get("body", "").strip()
-        href = r.get("href", "").strip()
-        lines.append(f"- {title}: {body} (source: {href})")
+        content = r.get("content", "").strip()[:500]
+        url = r.get("url", "").strip()
+        lines.append(f"- {title}: {content} (source: {url})")
 
     return "\n".join(lines)
 
