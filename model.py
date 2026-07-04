@@ -67,6 +67,16 @@ Response style rules (follow strictly):
   explicitly asks for a short/quick answer.
 - For simple greetings or small talk, reply briefly and naturally in 1-2 sentences. Do not pad
   small talk with unrelated facts.
+- For code requests:
+  - If the request is vague or missing key details (e.g. just "write code", or "write code .."
+    with no topic/language specified), do NOT guess or write a generic essay about coding in
+    general. Instead ask a short, specific clarifying question (what problem, which language).
+  - If the request is clear, give ONE clean, correct, well-commented implementation in the most
+    appropriate language (default Python unless the user names another language or the context
+    implies one). Do not repeat the same code twice (e.g. once "step by step" and again as
+    "full code") - explain briefly in prose, then show the code ONCE in a single fenced code
+    block with the language tag, e.g. ```python ... ```.
+  - Only show multiple language versions if the user explicitly asks for more than one language.
 - Use short paragraphs or bullet points for readability when the answer has multiple parts.
 - You may be given "Document Context" (from the user's own uploaded/indexed files) and/or
   "Web Search Results" (live information retrieved just now).
@@ -245,25 +255,21 @@ def is_greeting_or_smalltalk(query: str) -> bool:
 
 
 def needs_web_search(query: str, retrieved) -> bool:
-    """Only hit the live web when it's actually likely to help:
-    - explicit time-sensitive language, OR
-    - a real informational question that found nothing in local docs.
-    Greetings/small talk never reach this function (filtered earlier)."""
+    """Only hit the live web for genuinely time-sensitive queries (news,
+    scores, prices, 'today', 'current', etc.) or when the user is clearly
+    asking about their own uploaded documents and nothing matched.
+    General knowledge questions (algorithms, ML concepts, how-to coding)
+    should NEVER trigger web search - the LLM already knows this and
+    burning a Tavily call here just adds latency and wastes quota."""
     if is_greeting_or_smalltalk(query):
         return False
 
     if TIME_SENSITIVE_PATTERNS.search(query):
         return True
 
-    # Very short queries (1-2 words) that aren't time-sensitive are usually
-    # not worth a web search - let the model answer from its own knowledge.
-    word_count = len(query.strip().split())
-    if word_count <= 2 and not retrieved:
-        return False
-
-    if not retrieved:
-        return True
-
+    # No fallback-to-web for plain "nothing matched in docs" case anymore -
+    # that was firing on every general knowledge question since the doc
+    # index is usually empty/unrelated to begin with.
     return False
 
 
