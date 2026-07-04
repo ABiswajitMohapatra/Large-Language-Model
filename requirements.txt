@@ -1,12 +1,11 @@
-streamlit
+# Add/update these in your requirements.txt — you can remove ddgs/duckduckgo_search now
+requests
 groq
 fastembed
-numpy
-python-dotenv
-python-docx
-pypdf
+streamlit
 pdfplumber
+python-docx
+pillow
 pytesseract
-Pillow
-fpdf
-ddgs
+python-dotenv
+numpy
