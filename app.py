@@ -117,15 +117,49 @@ def render_meta_tag(sources, web_used):
         )
 
 
+import re as _re
+
+CODE_BLOCK_PATTERN = _re.compile(r"```(\w*)\n(.*?)```", _re.DOTALL)
+
+
+def render_message(message: str, align: str):
+    """Renders a message as a styled bold bubble (matching the original
+    right/left aligned look), but pulls out ```fenced code blocks``` and
+    renders them with st.code() so syntax highlighting + the copy button
+    still work properly instead of showing raw backticks as plain text."""
+    pos = 0
+    found_code = False
+
+    for match in CODE_BLOCK_PATTERN.finditer(message):
+        found_code = True
+        before = message[pos:match.start()].strip()
+        if before:
+            st.markdown(
+                f"<div class='message' style='text-align:{align};'>"
+                f"{'🧑‍🔬' if align == 'right' else '⚛'} <b>{before}</b></div>",
+                unsafe_allow_html=True
+            )
+        lang = match.group(1) or None
+        code = match.group(2)
+        st.code(code, language=lang)
+        pos = match.end()
+
+    remainder = message[pos:].strip()
+    if remainder or not found_code:
+        icon = "🧑‍🔬" if align == "right" else "⚛"
+        st.markdown(
+            f"<div class='message' style='text-align:{align};'>{icon} <b>{remainder}</b></div>",
+            unsafe_allow_html=True
+        )
+
+
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg["role"] == "Agent":
-        with st.chat_message("assistant", avatar="⚛"):
-            st.markdown(msg["message"])
-            render_meta_tag(msg.get("sources"), msg.get("web_used"))
+        render_message(msg["message"], align="left")
+        render_meta_tag(msg.get("sources"), msg.get("web_used"))
     else:
-        with st.chat_message("user", avatar="🧑‍🔬"):
-            st.markdown(msg["message"])
+        render_message(msg["message"], align="right")
 
 # --- Show header only before first chat ---
 if len(st.session_state.current_session) == 0:
@@ -140,43 +174,42 @@ prompt = st.chat_input("Say something...", key="main_chat_input")
 
 if prompt:
     add_message("User", prompt)
-
-    with st.chat_message("user", avatar="🧑‍🔬"):
-        st.markdown(prompt)
+    render_message(prompt, align="right")
 
     custom_reply = check_custom_response(prompt)
+    placeholder = st.empty()
 
-    with st.chat_message("assistant", avatar="⚛"):
-        placeholder = st.empty()
+    if custom_reply:
+        final_answer = custom_reply
+        sources, web_used = [], False
+        with placeholder.container():
+            render_message(final_answer, align="left")
+    else:
+        use_pdf = (
+            ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower())
+            and st.session_state.uploaded_pdf_text
+        )
+        query_text = "Please provide a summary of this document." if use_pdf else prompt
+        extra_content = st.session_state.uploaded_pdf_text if use_pdf else ""
 
-        if custom_reply:
-            final_answer = custom_reply
-            sources, web_used = [], False
-            placeholder.markdown(final_answer)
-        else:
-            use_pdf = (
-                ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower())
-                and st.session_state.uploaded_pdf_text
-            )
-            query_text = "Please provide a summary of this document." if use_pdf else prompt
-            extra_content = st.session_state.uploaded_pdf_text if use_pdf else ""
+        stream, sources, web_used = chat_with_agent_stream(
+            query_text,
+            st.session_state.index,
+            st.session_state.current_session,
+            extra_file_content=extra_content
+        )
 
-            stream, sources, web_used = chat_with_agent_stream(
-                query_text,
-                st.session_state.index,
-                st.session_state.current_session,
-                extra_file_content=extra_content
-            )
+        # Real streaming: buffer tokens as they arrive, re-render the bubble
+        # (with code-block splitting) each time so it stays live and code
+        # blocks still get proper formatting once complete.
+        typed_text = ""
+        for chunk in stream:
+            typed_text += chunk
+            with placeholder.container():
+                render_message(typed_text, align="left")
+        final_answer = typed_text
 
-            # Real streaming: render tokens as they arrive from Groq, no artificial delay.
-            typed_text = ""
-            for chunk in stream:
-                typed_text += chunk
-                placeholder.markdown(typed_text)
-            final_answer = typed_text
-
-        render_meta_tag(sources, web_used)
-
+    render_meta_tag(sources, web_used)
     add_message("Agent", final_answer, sources=sources, web_used=web_used)
 
 # --- Save session ---
