@@ -1,7 +1,6 @@
 import streamlit as st
-from model import get_base_index, chat_with_agent
+from model import get_base_index, chat_with_agent_stream
 import pdfplumber
-import time
 
 st.set_page_config(page_title="BiswaLex", page_icon="⚛", layout="wide")
 
@@ -78,6 +77,7 @@ if uploaded_file is not None:
             extracted_text += (page.extract_text() or "") + "\n"
     st.session_state.uploaded_pdf_text = extracted_text.strip()
 
+
 # --- Message handler ---
 def add_message(role, message, sources=None, web_used=False):
     st.session_state.current_session.append({
@@ -87,21 +87,22 @@ def add_message(role, message, sources=None, web_used=False):
         "web_used": web_used
     })
 
+
+# Custom responses take priority over everything, checked with word-boundary
+# matching so they don't accidentally fire on unrelated text containing
+# substrings like "ok" inside another word.
 CUSTOM_RESPONSES = {
     "who created you": "I was created by Biswajit Mohapatra, my owner 🚀",
-    "creator": "My creator is Biswajit Mohapatra.",
+    "who is your creator": "My creator is Biswajit Mohapatra.",
     "who is your father": "My father is Biswajit Mohapatra 👨‍💻",
-    "father": "My father is Biswajit Mohapatra.",
-    "who trained you": "I was trained by Biswajit Mohapatra.",
-    "trained": "I was trained and fine-tuned by Biswajit Mohapatra."
+    "who trained you": "I was trained and fine-tuned by Biswajit Mohapatra."
 }
 
+
 def check_custom_response(user_input: str):
-    normalized = user_input.lower().strip()
-    for keyword, response in CUSTOM_RESPONSES.items():
-        if keyword in normalized:
-            return response
-    return None
+    normalized = user_input.lower().strip().rstrip("?!.")
+    return CUSTOM_RESPONSES.get(normalized)
+
 
 def render_meta_tag(sources, web_used):
     tags = []
@@ -114,6 +115,7 @@ def render_meta_tag(sources, web_used):
             f"<div class='meta-tag'>{' · '.join(tags)}</div>",
             unsafe_allow_html=True
         )
+
 
 # --- Display old messages ---
 for msg in st.session_state.current_session:
@@ -149,44 +151,42 @@ if prompt:
     )
 
     placeholder = st.empty()
-    typed_text = ""
-
     custom_reply = check_custom_response(prompt)
-    sources = []
-    web_used = False
 
     if custom_reply:
         final_answer = custom_reply
-    elif (
-        ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower())
-        and st.session_state.uploaded_pdf_text
-    ):
-        answer, sources, web_used = chat_with_agent(
-            "Please provide a summary of this document.",
-            st.session_state.index,
-            st.session_state.current_session,
-            extra_file_content=st.session_state.uploaded_pdf_text
-        )
-        final_answer = answer
-    else:
-        answer, sources, web_used = chat_with_agent(
-            prompt,
-            st.session_state.index,
-            st.session_state.current_session
-        )
-        final_answer = answer
-
-    for char in final_answer:
-        typed_text += char
+        sources, web_used = [], False
         placeholder.markdown(
-            f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>",
+            f"<div class='message' style='text-align:left;'>⚛ <b>{final_answer}</b></div>",
             unsafe_allow_html=True
         )
-        time.sleep(0.002)
+    else:
+        use_pdf = (
+            ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower())
+            and st.session_state.uploaded_pdf_text
+        )
+        query_text = "Please provide a summary of this document." if use_pdf else prompt
+        extra_content = st.session_state.uploaded_pdf_text if use_pdf else ""
+
+        stream, sources, web_used = chat_with_agent_stream(
+            query_text,
+            st.session_state.index,
+            st.session_state.current_session,
+            extra_file_content=extra_content
+        )
+
+        # Real streaming: render tokens as they arrive from Groq, no artificial delay.
+        typed_text = ""
+        for chunk in stream:
+            typed_text += chunk
+            placeholder.markdown(
+                f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>",
+                unsafe_allow_html=True
+            )
+        final_answer = typed_text
 
     render_meta_tag(sources, web_used)
     add_message("Agent", final_answer, sources=sources, web_used=web_used)
-    st.balloons()
 
 # --- Save session ---
 if st.sidebar.button("Save Session"):
