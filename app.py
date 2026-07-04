@@ -120,16 +120,12 @@ def render_meta_tag(sources, web_used):
 # --- Display old messages ---
 for msg in st.session_state.current_session:
     if msg["role"] == "Agent":
-        st.markdown(
-            f"<div class='message' style='text-align:left;'>⚛ <b>{msg['message']}</b></div>",
-            unsafe_allow_html=True
-        )
-        render_meta_tag(msg.get("sources"), msg.get("web_used"))
+        with st.chat_message("assistant", avatar="⚛"):
+            st.markdown(msg["message"])
+            render_meta_tag(msg.get("sources"), msg.get("web_used"))
     else:
-        st.markdown(
-            f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{msg['message']}</b></div>",
-            unsafe_allow_html=True
-        )
+        with st.chat_message("user", avatar="🧑‍🔬"):
+            st.markdown(msg["message"])
 
 # --- Show header only before first chat ---
 if len(st.session_state.current_session) == 0:
@@ -145,47 +141,42 @@ prompt = st.chat_input("Say something...", key="main_chat_input")
 if prompt:
     add_message("User", prompt)
 
-    st.markdown(
-        f"<div class='message' style='text-align:right;'>🧑‍🔬 <b>{prompt}</b></div>",
-        unsafe_allow_html=True
-    )
+    with st.chat_message("user", avatar="🧑‍🔬"):
+        st.markdown(prompt)
 
-    placeholder = st.empty()
     custom_reply = check_custom_response(prompt)
 
-    if custom_reply:
-        final_answer = custom_reply
-        sources, web_used = [], False
-        placeholder.markdown(
-            f"<div class='message' style='text-align:left;'>⚛ <b>{final_answer}</b></div>",
-            unsafe_allow_html=True
-        )
-    else:
-        use_pdf = (
-            ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower())
-            and st.session_state.uploaded_pdf_text
-        )
-        query_text = "Please provide a summary of this document." if use_pdf else prompt
-        extra_content = st.session_state.uploaded_pdf_text if use_pdf else ""
+    with st.chat_message("assistant", avatar="⚛"):
+        placeholder = st.empty()
 
-        stream, sources, web_used = chat_with_agent_stream(
-            query_text,
-            st.session_state.index,
-            st.session_state.current_session,
-            extra_file_content=extra_content
-        )
-
-        # Real streaming: render tokens as they arrive from Groq, no artificial delay.
-        typed_text = ""
-        for chunk in stream:
-            typed_text += chunk
-            placeholder.markdown(
-                f"<div class='message' style='text-align:left;'>⚛ <b>{typed_text}</b></div>",
-                unsafe_allow_html=True
+        if custom_reply:
+            final_answer = custom_reply
+            sources, web_used = [], False
+            placeholder.markdown(final_answer)
+        else:
+            use_pdf = (
+                ("pdf" in prompt.lower() or "file" in prompt.lower() or "document" in prompt.lower())
+                and st.session_state.uploaded_pdf_text
             )
-        final_answer = typed_text
+            query_text = "Please provide a summary of this document." if use_pdf else prompt
+            extra_content = st.session_state.uploaded_pdf_text if use_pdf else ""
 
-    render_meta_tag(sources, web_used)
+            stream, sources, web_used = chat_with_agent_stream(
+                query_text,
+                st.session_state.index,
+                st.session_state.current_session,
+                extra_file_content=extra_content
+            )
+
+            # Real streaming: render tokens as they arrive from Groq, no artificial delay.
+            typed_text = ""
+            for chunk in stream:
+                typed_text += chunk
+                placeholder.markdown(typed_text)
+            final_answer = typed_text
+
+        render_meta_tag(sources, web_used)
+
     add_message("Agent", final_answer, sources=sources, web_used=web_used)
 
 # --- Save session ---
