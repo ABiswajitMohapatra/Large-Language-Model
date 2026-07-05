@@ -6,6 +6,7 @@ It pairs a **FastAPI backend** (Groq-hosted LLMs + a lightweight in-memory vecto
 
 Live Demo
 App: https://frontend-five-ruby-23.vercel.app/
+
 <img width="512" height="512" alt="WhatsApp Image 2026-07-05 at 2 48 47 PM" src="https://github.com/user-attachments/assets/fac54543-fd37-4928-804a-c003818fc30d" />
 
 ## ✨ Features
