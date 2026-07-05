@@ -4,6 +4,8 @@ BiswaLex is a full-stack, ChatGPT-style AI assistant with document-aware RAG (Re
 
 It pairs a **FastAPI backend** (Groq-hosted LLMs + a lightweight in-memory vector index) with a **single-file HTML/CSS/JS frontend** that works great on desktop and mobile, and can be installed like a native app.
 
+Live Demo
+App: https://frontend-five-ruby-23.vercel.app/
 <img width="512" height="512" alt="WhatsApp Image 2026-07-05 at 2 48 47 PM" src="https://github.com/user-attachments/assets/fac54543-fd37-4928-804a-c003818fc30d" />
 
 ## ✨ Features
@@ -78,7 +80,7 @@ It pairs a **FastAPI backend** (Groq-hosted LLMs + a lightweight in-memory vecto
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<your-username>/biswalex-ai.git
+git clone (https://github.com/ABiswajitMohapatra/Large-Language-Model/tree/main)
 cd biswalex-ai
 ```
 
