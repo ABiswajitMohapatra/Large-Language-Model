@@ -4,9 +4,7 @@ BiswaLex is a full-stack, ChatGPT-style AI assistant with document-aware RAG (Re
 
 It pairs a **FastAPI backend** (Groq-hosted LLMs + a lightweight in-memory vector index) with a **single-file HTML/CSS/JS frontend** that works great on desktop and mobile, and can be installed like a native app.
 
-![BiswaLex](icon-512.png)
-
----
+---"C:\Users\biswa\OneDrive\Desktop\WhatsApp Image 2026-07-05 at 2.43.41 PM.jpeg"
 
 ## ✨ Features
 
