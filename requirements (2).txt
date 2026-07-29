@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+groq
+fastembed
+pdfplumber
+pypdfium2
+Pillow
+pytesseract
+python-dotenv
+python-docx
+requests
+python-multipart
+numpy
+python-pptx
+openai
