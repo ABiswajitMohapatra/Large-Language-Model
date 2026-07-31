@@ -7,8 +7,6 @@ It pairs a **FastAPI backend** (Groq-hosted LLMs + a lightweight in-memory vecto
 Live Demo
 App: https://frontend-five-ruby-23.vercel.app/
 
-<img width="512" height="512" alt="WhatsApp Image 2026-07-05 at 2 48 47 PM" src="https://github.com/user-attachments/assets/fac54543-fd37-4928-804a-c003818fc30d" />
-
 ## ✨ Features
 
 - **Multi-model chat** — switch between several free-tier Groq models (Llama 3.3 70B, Llama 3.1 8B Instant, Llama 4 Scout, Qwen3 32B, Gemma2 9B, DeepSeek R1 Distill 70B) right from the UI.
