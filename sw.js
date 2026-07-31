@@ -1,25 +1,14 @@
-const CACHE = "biswalex-shell-v1";
-const SHELL = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
-
-self.addEventListener("install", (e) => {
+// Minimal service worker: only needed so the browser considers the site
+// an installable PWA. Does not cache/intercept anything, so it can never
+// break or serve stale content - all requests just pass through to network.
+self.addEventListener('install', (event) => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
 });
 
-// Network-first for API calls, cache-first for the app shell only.
-self.addEventListener("fetch", (e) => {
-  const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
-  e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request).catch(() => cached))
-  );
+self.addEventListener('fetch', (event) => {
+  // Pass-through only - no caching, no offline behavior, no risk of stale UI.
 });
