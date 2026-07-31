@@ -1,6 +1,6 @@
-# BiswaLex AI
+# Mastishk AI
 
-BiswaLex is a full-stack, ChatGPT-style AI assistant with document-aware RAG (Retrieval-Augmented Generation), live web search, OCR-based file ingestion, and a fast, installable Progressive Web App (PWA) frontend.
+Mastishk is a full-stack, ChatGPT-style AI assistant with document-aware RAG (Retrieval-Augmented Generation), live web search, OCR-based file ingestion, and a fast, installable Progressive Web App (PWA) frontend.
 
 It pairs a **FastAPI backend** (Groq-hosted LLMs + a lightweight in-memory vector index) with a **single-file HTML/CSS/JS frontend** that works great on desktop and mobile, and can be installed like a native app.
 
@@ -82,7 +82,7 @@ App: https://frontend-five-ruby-23.vercel.app/
 
 ```bash
 git clone (https://github.com/ABiswajitMohapatra/Large-Language-Model/tree/main)
-cd biswalex-ai
+cd mastishk-ai
 ```
 
 ### 2. Install backend dependencies
@@ -156,7 +156,7 @@ curl -X POST http://localhost:7860/chat \
 
 ## 📱 PWA / Installability
 
-BiswaLex ships with a `manifest.json` and `sw.js` service worker, so it can be installed as a standalone app on desktop and mobile (Add to Home Screen). The service worker caches the app shell (`index.html`, manifest, icons) for fast, offline-tolerant loading, while API calls always go straight to the network.
+Mastishk ships with a `manifest.json` and `sw.js` service worker, so it can be installed as a standalone app on desktop and mobile (Add to Home Screen). The service worker caches the app shell (`index.html`, manifest, icons) for fast, offline-tolerant loading, while API calls always go straight to the network.
 
 ---
 
