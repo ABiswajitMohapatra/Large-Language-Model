@@ -1,0 +1,46 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bwx-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4C3AE3"/>
+      <stop offset="100%" stop-color="#1F1656"/>
+    </linearGradient>
+  </defs>
+
+  <!-- left hemisphere: organic brain folds -->
+  <g fill="none" stroke="url(#bwx-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M100 46
+             C 78 46, 58 58, 54 80
+             C 50 98, 58 108, 52 122
+             C 47 134, 58 146, 72 146
+             C 82 146, 86 138, 92 140
+             C 96 141, 98 148, 100 150"/>
+    <path d="M100 60
+             C 88 62, 78 70, 78 82
+             C 78 92, 86 96, 82 106
+             C 79 114, 86 120, 94 120"/>
+  </g>
+
+  <!-- center divide -->
+  <line x1="100" y1="46" x2="100" y2="150" stroke="url(#bwx-grad)" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- right hemisphere: AI circuit / neural nodes -->
+  <g stroke="url(#bwx-grad)" stroke-width="4" stroke-linecap="round">
+    <line x1="100" y1="150" x2="118" y2="140"/>
+    <line x1="118" y1="140" x2="138" y2="146"/>
+    <line x1="118" y1="140" x2="126" y2="118"/>
+    <line x1="126" y1="118" x2="148" y2="112"/>
+    <line x1="126" y1="118" x2="118" y2="98"/>
+    <line x1="118" y1="98" x2="136" y2="84"/>
+    <line x1="118" y1="98" x2="100" y2="88"/>
+    <line x1="100" y1="88" x2="100" y2="60"/>
+  </g>
+  <g fill="url(#bwx-grad)">
+    <circle cx="118" cy="140" r="5"/>
+    <circle cx="138" cy="146" r="4"/>
+    <circle cx="126" cy="118" r="5"/>
+    <circle cx="148" cy="112" r="4"/>
+    <circle cx="118" cy="98" r="5"/>
+    <circle cx="136" cy="84" r="4"/>
+    <circle cx="100" cy="88" r="4.5"/>
+  </g>
+</svg>
