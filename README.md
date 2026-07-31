@@ -5,7 +5,7 @@ Mastishk is a full-stack, ChatGPT-style AI assistant with document-aware RAG (Re
 It pairs a **FastAPI backend** (Groq-hosted LLMs + a lightweight in-memory vector index) with a **single-file HTML/CSS/JS frontend** that works great on desktop and mobile, and can be installed like a native app.
 
 Live Demo
-App: https://frontend-five-ruby-23.vercel.app/
+App: https://frontend-ashen-phi-83.vercel.app/
 
 ## ✨ Features
 
