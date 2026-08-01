@@ -5600,6 +5600,7 @@ function addCompareMessage(modelALabel, modelBLabel) {
   row.className = 'msg-row assistant';
   const idA = 'cmp-a-' + Date.now() + Math.random().toString(36).slice(2);
   const idB = 'cmp-b-' + Date.now() + Math.random().toString(36).slice(2);
+  const footerId = 'cmp-footer-' + Date.now() + Math.random().toString(36).slice(2);
   row.innerHTML = `
     <div class="avatar assistant">${BOT_ICON}</div>
     <div style="flex:1;min-width:0;">
@@ -5613,11 +5614,12 @@ function addCompareMessage(modelALabel, modelBLabel) {
           <div class="bubble" id="${idB}" style="border:none;padding:0;background:none;"><div class="typing-dots"><span></span><span></span><span></span></div></div>
         </div>
       </div>
+      <div id="${footerId}"></div>
     </div>
   `;
   messages.appendChild(row);
   messages.scrollTop = messages.scrollHeight;
-  return { idA, idB };
+  return { idA, idB, footerId, row };
 }
 
 async function streamOneCompareSide(query, model, bubbleEl) {
@@ -5666,7 +5668,7 @@ async function streamCompareReply(query) {
 
   const labelA = (availableModels.find(m => m.id === selectedModel) || {}).label || selectedModel || 'Model A';
   const labelB = (availableModels.find(m => m.id === compareModel2) || {}).label || compareModel2 || 'Model B';
-  const { idA, idB } = addCompareMessage(labelA, labelB);
+  const { idA, idB, footerId, row } = addCompareMessage(labelA, labelB);
   const bubbleA = document.getElementById(idA);
   const bubbleB = document.getElementById(idB);
 
@@ -5675,19 +5677,54 @@ async function streamCompareReply(query) {
     streamOneCompareSide(query, compareModel2, bubbleB)
   ]);
 
-  // Only the primary (currently selected) model's answer becomes part of
-  // the real conversation/context, same as a normal reply - the second
-  // column is shown for comparison only, so nothing about existing chat
-  // continuity, RAG, or history logic is affected.
-  history.push({ role: 'assistant', message: textA });
   isStreaming = false;
   currentAbortController = null;
   setSendButtonMode(false);
   setStreamingTitle(false);
+
+  // Neither answer is part of the real conversation yet - the user picks
+  // a side below, and only the chosen one becomes an actual saved chat
+  // message (history/context/RAG all unaffected until then).
+  showCompareChoice(query, row, footerId, labelA, labelB, textA, textB);
+}
+
+// Shows a "use this response" button under each column once both sides
+// have finished streaming. Picking one removes the 2-column comparison
+// bubble and adds the chosen text as a normal single assistant message -
+// same bubble, same actions (copy/regenerate/etc.), same history save as
+// any other reply. The unpicked side is simply discarded.
+function showCompareChoice(query, row, footerId, labelA, labelB, textA, textB) {
+  const footer = document.getElementById(footerId);
+  if (!footer) return;
+  footer._cmpRow = row;
+  footer._cmpQuery = query;
+  footer._cmpTextA = textA;
+  footer._cmpTextB = textB;
+  footer.innerHTML = `
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600;" onclick="chooseCompareResponse(this, 'A')">👍 Use ${escapeHtml(labelA)}'s response</button>
+      <button style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600;" onclick="chooseCompareResponse(this, 'B')">👍 Use ${escapeHtml(labelB)}'s response</button>
+    </div>
+  `;
+}
+
+function chooseCompareResponse(btn, side) {
+  const footer = btn.closest('[id^="cmp-footer-"]');
+  const row = footer && footer._cmpRow;
+  if (!row) return;
+  const chosenText = side === 'A' ? footer._cmpTextA : footer._cmpTextB;
+  const query = footer._cmpQuery;
+
+  row.remove();
+  const bubbleId = addMessage('assistant', renderMarkdown(chosenText), history.length);
+  history.push({ role: 'assistant', message: chosenText });
   upsertConversation();
   if (currentConvId) autoTitleConversation(currentConvId);
   updateTokenCounter();
   analyzePiri();
+  if (!isSharedView && chosenText.trim()) {
+    renderFollowupChips(bubbleId, query, chosenText);
+  }
 }
 
 async function renderFollowupChips(bubbleId, query, answer) {
