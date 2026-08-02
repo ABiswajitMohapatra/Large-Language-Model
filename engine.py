@@ -135,7 +135,7 @@ GENERIC_DOC_REFERENCE_PATTERN = re.compile(
     r"(pdf|doc|document|file|attachment|resume|cv)\b",
     re.IGNORECASE
 )
-
+# Biswajit here 
 # Explicit signal the user actually wants to draw on MULTIPLE documents at
 # once (e.g. "compare both files", "across all documents"). Only in this
 # case should an ambiguous query fall back to searching everything uploaded;
